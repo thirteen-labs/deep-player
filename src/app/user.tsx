@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
 import { useEffect, useState } from 'react';
 
+import { AppIconPicker } from '@/components/app-icon-picker';
 import { ThemePicker } from '@/components/theme-picker';
 import { AppButton, InfoRow, PermissionRow, Screen, SectionCard, TopBar } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
@@ -54,6 +55,8 @@ export default function UserScreen() {
       </SectionCard>
 
       <ThemePicker />
+
+      <AppIconPicker />
 
       <SectionCard title="Permissions">
         <PermissionRow label="Media library" status={mediaPermission} onRequest={handleMediaRequest} />

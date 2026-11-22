@@ -14,6 +14,7 @@ Deep Player is a local-first music and video player for iOS, Android, and web. I
 - **Videos** — video library and `expo-video` player with Picture-in-Picture and background playback config
 - **Offline playback** — downloads tracks and artwork to the app document directory and persists local URIs
 - **Theming and permissions** — theme picker, media-library and notification permission controls, file picker
+- **App icons** — runtime picker with 11 optional icons on iOS and Android
 - **CI** — lint, typecheck, and release APK build via GitHub Actions
 
 ## Tech stack
@@ -80,7 +81,7 @@ Public variables are bundled into the app. See `.env.example`:
 
 ## Permissions
 
-The app requests media library access to scan audio/video, and optional notification permission for playback controls. On the User tab you can request permissions, pick individual files, open system settings, refresh the library, and change the theme.
+The app requests media library access to scan audio/video, and optional notification permission for playback controls. On the User tab you can request permissions, pick individual files, open system settings, refresh the library, change the theme, and switch between the bundled app icons.
 
 ## Data and offline behavior
 

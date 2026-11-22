@@ -8,6 +8,7 @@
     "@shopify/flash-list": "2.3.2",
     "buffer": "^6.0.3",
     "expo": "~58.0.26",
+    "expo-alternate-app-icons": "^11.0.0",
     "expo-asset": "~58.0.21",
     "expo-audio": "~58.0.12",
     "expo-blur": "~58.0.6",
@@ -53,6 +54,8 @@
     "zustand": "^5.1.0"
   },
   "devDependencies": {
+    "@babel/plugin-transform-dynamic-import": "^7.29.7",
+    "@babel/plugin-transform-modules-commonjs": "^7.29.14",
     "@babel/plugin-transform-unicode-sets-regex": "^7.29.7",
     "@tailwindcss/postcss": "^4.1.12",
     "@types/react": "~19.3.0",
