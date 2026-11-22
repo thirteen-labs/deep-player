@@ -1,56 +1,130 @@
-# Welcome to your Expo app 👋
+# Deep Player
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Deep Player is a local-first music and video player for iOS, Android, and web. It scans the device media library into an on-device SQLite database and provides browsing, playback, playlists, favorites, queue management, and offline playback without a backend.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **Library scanning** — imports audio and video from the device media library into SQLite
+- **Tabs** — Home, Folders, Music, Videos, and User (native tabs on iOS/Android, custom tab bar on web)
+- **Music playback** — shared `expo-audio` player with lock-screen controls, background playback, seek, repeat, shuffle, speed, and volume
+- **Browsing** — search, artists, albums, track lists, folders, and video smartlists (FlashList-backed)
+- **Playlists** — create, rename, delete, and reorder collections; add tracks from any list
+- **Favorites and history** — favorite tracks and recently played items
+- **Queue** — play next, add to queue, and remove from queue
+- **Videos** — video library and `expo-video` player with Picture-in-Picture and background playback config
+- **Offline playback** — downloads tracks and artwork to the app document directory and persists local URIs
+- **Theming and permissions** — theme picker, media-library and notification permission controls, file picker
+- **CI** — lint, typecheck, and release APK build via GitHub Actions
 
-   ```bash
-   npm install
-   ```
+## Tech stack
 
-2. Start the app
+- Expo SDK 58 / React Native 0.88 / React 19
+- Expo Router for file-based navigation
+- `expo-sqlite` for local persistence
+- `expo-media-library` for device scanning
+- `expo-audio` and `expo-video` for playback
+- Zustand for app and player state
+- FlashList for long lists
+- NativeWind / Expo UI components for theming
 
-   ```bash
-   npx expo start
-   ```
+## Getting started
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Prerequisites: Node 24 and npm. Android builds also require JDK 17 and Android SDK 36; iOS builds require Xcode.
 
 ```bash
-npm run reset-project
+npm ci
+cp .env.example .env   # optional; see "Environment" below
+npm start
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+Because the app uses native modules, full functionality requires a development build rather than Expo Go:
 
-### Other setup steps
+```bash
+npm run android        # local Android dev build (expo run:android)
+npm run ios            # local iOS dev build (expo run:ios)
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Or use EAS to create a cloud development build:
 
-## Learn more
+```bash
+npx eas-cli@latest build --profile development --platform android
+npx eas-cli@latest build --profile development --platform ios
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Install the build on a device or emulator, then start Metro with `npm start`.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Scripts
 
-## Join the community
+| Script              | Command            | Purpose                  |
+| ------------------- | ------------------ | ------------------------ |
+| `npm start`         | `expo start`       | Start Metro              |
+| `npm run android`   | `expo run:android` | Build and launch Android |
+| `npm run ios`       | `expo run:ios`     | Build and launch iOS     |
+| `npm run web`       | `expo start --web` | Run the web target       |
+| `npm run lint`      | `expo lint`        | ESLint                   |
+| `npm run typecheck` | `tsc --noEmit`     | TypeScript check         |
 
-Join our community of developers creating universal apps.
+Run `npm run lint && npm run typecheck` before submitting changes.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Environment
+
+Public variables are bundled into the app. See `.env.example`:
+
+| Variable                           | Default                      | Purpose                             |
+| ---------------------------------- | ---------------------------- | ----------------------------------- |
+| `EXPO_PUBLIC_APP_ENV`              | `development` / `production` | Environment shown on the User tab   |
+| `EXPO_PUBLIC_API_URL`              | empty                        | Reserved for future remote services |
+| `EXPO_PUBLIC_ENABLE_NOTIFICATIONS` | `true`                       | Notification feature flag           |
+| `EXPO_PUBLIC_ENABLE_ANALYTICS`     | `false`                      | Analytics feature flag              |
+| `EXPO_PUBLIC_LOG_LEVEL`            | `debug` / `info`             | Client log level                    |
+
+## Permissions
+
+The app requests media library access to scan audio/video, and optional notification permission for playback controls. On the User tab you can request permissions, pick individual files, open system settings, refresh the library, and change the theme.
+
+## Data and offline behavior
+
+All metadata lives in a local SQLite database (`deep-player.db`), including folders, tracks, playlists, favorites, playback positions, and recently played items. `Scan library` upserts device assets into the `tracks` table. Offline caching downloads track audio and artwork into `Paths.document` and stores their local URIs, so cached items keep playing without network access.
+
+## Project structure
+
+```text
+src/app/                 Expo Router routes (screens and layouts)
+src/components/          Shared components and connected rows
+src/components/ui/       Presentational UI primitives
+src/config/              Environment/config helpers
+src/db/                  Local database helpers
+src/hooks/               Reusable hooks
+src/lib/audio/           Shared expo-audio engine
+src/lib/db/              SQLite schema and Zustand-backed store
+src/lib/library/         Media library scanning and offline cache
+src/stores/              Player, sort, and UI state stores
+src/utils/               Formatting and sorting helpers
+```
+
+Non-route code stays outside `src/app/`. Native `ios/` and `android/` directories are generated by Expo prebuild and are not committed.
+
+## Builds and CI
+
+The EAS project is `@cadmus_labs/deep-player` (`bf15c266-ce64-45e4-8d43-4e3832be8c67` in `app.json`). Profiles in `eas.json`:
+
+| Profile       | Purpose                           |
+| ------------- | --------------------------------- |
+| `development` | Internal development client build |
+| `preview`     | Internal distribution build       |
+| `production`  | Store build                       |
+
+`.github/workflows/ci.yml` runs on pushes to `main`/`master`, pull requests, and manual dispatch. It runs lint and typecheck, then regenerates the Android project with `npx expo prebuild --platform android --clean`, runs `./gradlew :app:assembleRelease`, and uploads the resulting APK as the `deep-player-apk` artifact. This APK is debug-signed so it is installable; a production-signed release needs keystore secrets.
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for EAS build, submit, OTA update, backup, and Maestro instructions.
+
+## Smoke tests
+
+Maestro flows live in `.maestro/`:
+
+```bash
+npx maestro test .maestro/smoke-tabs.yaml
+npx maestro test .maestro/smoke-folders.yaml
+```
+
+The flows use the Android application id `com.deep.player`.
