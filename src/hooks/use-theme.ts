@@ -1,14 +1,11 @@
+import { useResolvedTheme } from '@/hooks/use-theme-store';
+
 /**
- * Learn more about light and dark modes:
- * https://docs.expo.dev/guides/color-schemes/
+ * Returns the active ThemePalette. Supports multi-theme selection via useThemeStore.
  */
-
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
 export function useTheme() {
-  const scheme = useColorScheme();
-  const theme = scheme === 'dark' ? 'dark' : 'light';
-
-  return Colors[theme];
+  const { theme } = useResolvedTheme();
+  return theme;
 }
+
+export { useResolvedTheme };

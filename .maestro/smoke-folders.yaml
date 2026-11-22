@@ -1,0 +1,7 @@
+appId: com.deep.player
+---
+- launchApp
+- tapOn:
+    text: Folders
+- assertVisible:
+    text: Video smartlists

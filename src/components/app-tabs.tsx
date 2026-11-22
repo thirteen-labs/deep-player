@@ -1,31 +1,36 @@
 import { NativeTabs } from 'expo-router/native-tabs';
-import { useColorScheme } from 'react-native';
 
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function AppTabs() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const theme = useTheme();
 
   return (
     <NativeTabs
-      backgroundColor={colors.background}
-      indicatorColor={colors.backgroundElement}
-      labelStyle={{ selected: { color: colors.text } }}>
-      <NativeTabs.Trigger name="index">
+      blurEffect={theme.isDark ? 'systemMaterialDark' : 'systemMaterialLight'}
+      backgroundColor={theme.tabBarBackground}
+      indicatorColor={theme.backgroundElement}
+      labelStyle={{ selected: { color: theme.text } }}
+      iconColor={{ default: theme.textSecondary, selected: theme.tint }}>
+      <NativeTabs.Trigger name="home">
         <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/home.png')}
-          renderingMode="template"
-        />
+        <NativeTabs.Trigger.Icon sf="house" md="home" />
       </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
-        />
+      <NativeTabs.Trigger name="folders">
+        <NativeTabs.Trigger.Label>Folders</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="folder" md="folder" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="music">
+        <NativeTabs.Trigger.Label>Music</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="music.note" md="library_music" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="videos">
+        <NativeTabs.Trigger.Label>Videos</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="video" md="videocam" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="user">
+        <NativeTabs.Trigger.Label>User</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="person" md="person" />
       </NativeTabs.Trigger>
     </NativeTabs>
   );

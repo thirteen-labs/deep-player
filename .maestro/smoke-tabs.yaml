@@ -1,0 +1,11 @@
+appId: com.deep.player
+---
+- launchApp
+- assertVisible:
+    text: Music
+- assertVisible:
+    text: Folders
+- assertVisible:
+    text: Videos
+- assertVisible:
+    text: User
