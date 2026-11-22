@@ -53,6 +53,7 @@
     "zustand": "^5.1.0"
   },
   "devDependencies": {
+    "@babel/plugin-transform-unicode-sets-regex": "^7.29.7",
     "@tailwindcss/postcss": "^4.1.12",
     "@types/react": "~19.3.0",
     "eslint": "^9.0.0",
