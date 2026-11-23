@@ -1,5 +1,5 @@
 import { PropsWithChildren, type ReactNode } from 'react';
-import { ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { ScrollView, StyleSheet, useWindowDimensions, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ScreenBackground } from '@/components/screen-background';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -32,6 +32,8 @@ export function Screen({
   style,
 }: ScreenProps) {
   const bottomInset = useScreenBottomInset();
+  const { width } = useWindowDimensions();
+  const compact = width < 560;
 
   return (
     <ScreenBackground style={style}>
@@ -39,7 +41,7 @@ export function Screen({
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: bottomInset },
+          { paddingBottom: bottomInset, paddingHorizontal: compact ? Spacing.three : Spacing.four },
           contentContainerStyle,
         ]}
         showsVerticalScrollIndicator={false}>
@@ -57,7 +59,6 @@ export function Screen({
 
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: Spacing.four,
     paddingTop: Spacing.five,
   },
   page: {

@@ -1,8 +1,32 @@
 import { create } from 'zustand';
 
-import { AlbumRow, Folder, FolderMediaType, FolderKind, Playlist, PlaylistTrackRow, PlaybackPosition, Track, getDb } from '@/lib/db/schema';
+import {
+  AlbumRow,
+  Folder,
+  FolderMediaType,
+  FolderKind,
+  FolderTrackRow,
+  Playlist,
+  PlaylistTrackRow,
+  PlaybackPosition,
+  Track,
+  getDb,
+} from '@/lib/db/schema';
+import { syncSeriesFolders } from '@/lib/library/series';
 
-export type { AlbumRow, Folder, FolderMediaType, FolderKind, Playlist, PlaylistTrackRow, PlaybackPosition, Track };
+export type {
+  AlbumRow,
+  Folder,
+  FolderMediaType,
+  FolderKind,
+  FolderTrackRow,
+  Playlist,
+  PlaylistTrackRow,
+  PlaybackPosition,
+  Track,
+};
+
+type PlaybackStateRow = PlaybackPosition & { lastPlayedAt: number };
 
 /** Default folders seeded on first run. */
 const SEED_FOLDERS: Folder[] = [
@@ -19,8 +43,16 @@ const SEED_FOLDERS: Folder[] = [
   },
 ];
 
+async function fetchRecentlyPlayed(db: Awaited<ReturnType<typeof getDb>>) {
+  return db.getAllAsync<Track>(
+    `SELECT t.* FROM tracks t JOIN playbackState p ON p.trackId = t.id
+     WHERE p.lastPlayedAt > 0 ORDER BY p.lastPlayedAt DESC LIMIT 20`,
+  );
+}
+
 type DbStore = {
   folders: Folder[];
+  folderTracks: FolderTrackRow[];
   tracks: Track[];
   /** Distinct artist names across the library, sorted. */
   artists: string[];
@@ -31,14 +63,17 @@ type DbStore = {
   playlistTracks: PlaylistTrackRow[];
   /** Tracks with a recent playbackState, newest first. */
   recentlyPlayed: Track[];
-  /** Playback position per track, in seconds (from the `playbackState` table). */
+  /** Playback position per track, in seconds. */
   playbackPositions: Record<string, number>;
+  /** Last playback timestamp per track, in milliseconds. */
+  lastPlayedAt: Record<string, number>;
   isLoaded: boolean;
   error: string | null;
   load: () => Promise<void>;
   upsertTracks: (tracks: Track[]) => Promise<void>;
   toggleFavorite: (trackId: string) => Promise<void>;
-  setPlaybackPosition: (trackId: string, positionMs: number) => Promise<void>;
+  /** Persists a position expressed in seconds. */
+  setPlaybackPosition: (trackId: string, positionSeconds: number) => Promise<void>;
   createPlaylist: (name: string) => Promise<string>;
   renamePlaylist: (id: string, name: string) => Promise<void>;
   deletePlaylist: (id: string) => Promise<void>;
@@ -57,6 +92,7 @@ type DbStore = {
 
 export const useDbStore = create<DbStore>((set, get) => ({
   folders: [],
+  folderTracks: [],
   tracks: [],
   artists: [],
   albums: [],
@@ -64,6 +100,7 @@ export const useDbStore = create<DbStore>((set, get) => ({
   playlistTracks: [],
   recentlyPlayed: [],
   playbackPositions: {},
+  lastPlayedAt: {},
   isLoaded: false,
   error: null,
 
@@ -87,16 +124,17 @@ export const useDbStore = create<DbStore>((set, get) => ({
         }
       }
 
-      const [folders, tracks, positions, playlists, playlistTracks, recentlyPlayed] = await Promise.all([
+      const tracks = await db.getAllAsync<Track>('SELECT * FROM tracks ORDER BY addedAt DESC');
+      // Generated series folders are derived from the library, so refresh them first.
+      await syncSeriesFolders(db, tracks);
+
+      const [folders, folderTracks, positions, playlists, playlistTracks, recentlyPlayed] = await Promise.all([
         db.getAllAsync<Folder>('SELECT * FROM folders ORDER BY name'),
-        db.getAllAsync<Track>('SELECT * FROM tracks ORDER BY addedAt DESC'),
-        db.getAllAsync<PlaybackPosition>('SELECT trackId, positionMs FROM playbackState'),
+        db.getAllAsync<FolderTrackRow>('SELECT * FROM folderTracks ORDER BY folderId, position'),
+        db.getAllAsync<PlaybackStateRow>('SELECT trackId, positionMs, lastPlayedAt FROM playbackState'),
         db.getAllAsync<Playlist>('SELECT * FROM playlists ORDER BY name'),
         db.getAllAsync<PlaylistTrackRow>('SELECT * FROM playlistTracks'),
-        db.getAllAsync<Track>(
-          `SELECT t.* FROM tracks t JOIN playbackState p ON p.trackId = t.id
-           ORDER BY p.lastPlayedAt DESC LIMIT 20`
-        ),
+        fetchRecentlyPlayed(db),
       ]);
 
       // Derived artist and album indexes (used by the Artists and Albums screens).
@@ -115,13 +153,15 @@ export const useDbStore = create<DbStore>((set, get) => ({
 
       set({
         folders,
+        folderTracks,
         tracks,
         artists,
         albums,
         playlists,
         playlistTracks,
         recentlyPlayed,
-        playbackPositions: Object.fromEntries(positions.map((p) => [p.trackId, p.positionMs] as const)),
+        playbackPositions: Object.fromEntries(positions.map((p) => [p.trackId, p.positionMs / 1000] as const)),
+        lastPlayedAt: Object.fromEntries(positions.map((p) => [p.trackId, p.lastPlayedAt] as const)),
         isLoaded: true,
         error: null,
       });
@@ -179,7 +219,9 @@ export const useDbStore = create<DbStore>((set, get) => ({
     set({ tracks: tracks.map((t) => (t.id === trackId ? { ...t, favorite } : t)) });
   },
 
-  setPlaybackPosition: async (trackId, positionMs) => {
+  setPlaybackPosition: async (trackId, positionSeconds) => {
+    const seconds = Number.isFinite(positionSeconds) ? Math.max(0, positionSeconds) : 0;
+    const now = Date.now();
     const db = await getDb();
     await db.runAsync(
       `INSERT INTO playbackState (trackId, positionMs, lastPlayedAt)
@@ -188,10 +230,13 @@ export const useDbStore = create<DbStore>((set, get) => ({
          positionMs = excluded.positionMs,
          lastPlayedAt = excluded.lastPlayedAt`,
       trackId,
-      positionMs,
-      Date.now()
+      Math.round(seconds * 1000),
+      now
     );
-    set((state) => ({ playbackPositions: { ...state.playbackPositions, [trackId]: positionMs } }));
+    set((state) => ({
+      playbackPositions: { ...state.playbackPositions, [trackId]: seconds },
+      lastPlayedAt: { ...state.lastPlayedAt, [trackId]: now },
+    }));
   },
 
   createPlaylist: async (name) => {
@@ -281,13 +326,19 @@ export const useDbStore = create<DbStore>((set, get) => ({
   },
 
   recordPlayback: async (trackId) => {
+    const now = Date.now();
     const db = await getDb();
     await db.runAsync(
       `INSERT INTO playbackState (trackId, positionMs, lastPlayedAt) VALUES (?, 0, ?)
        ON CONFLICT(trackId) DO UPDATE SET lastPlayedAt = excluded.lastPlayedAt`,
       trackId,
-      Date.now()
+      now
     );
+    const recentlyPlayed = await fetchRecentlyPlayed(db);
+    set((state) => ({
+      recentlyPlayed,
+      lastPlayedAt: { ...state.lastPlayedAt, [trackId]: now },
+    }));
   },
 
   updateTrack: async (trackId, patch) => {
@@ -319,15 +370,18 @@ export const useDbStore = create<DbStore>((set, get) => ({
     for (const id of trackIds) {
       await db.runAsync('DELETE FROM tracks WHERE id = ?', id);
       await db.runAsync('DELETE FROM playlistTracks WHERE trackId = ?', id);
+      await db.runAsync('DELETE FROM folderTracks WHERE trackId = ?', id);
       await db.runAsync('DELETE FROM playbackState WHERE trackId = ?', id);
     }
     set((state) => ({
       tracks: state.tracks.filter((t) => !ids.has(t.id)),
       playlistTracks: state.playlistTracks.filter((r) => !ids.has(r.trackId)),
+      folderTracks: state.folderTracks.filter((r) => !ids.has(r.trackId)),
       recentlyPlayed: state.recentlyPlayed.filter((t) => !ids.has(t.id)),
       playbackPositions: Object.fromEntries(
         Object.entries(state.playbackPositions).filter(([id]) => !ids.has(id))
       ),
+      lastPlayedAt: Object.fromEntries(Object.entries(state.lastPlayedAt).filter(([id]) => !ids.has(id))),
     }));
   },
 }));

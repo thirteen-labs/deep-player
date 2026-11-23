@@ -9,7 +9,7 @@ import { usePlayerStore } from '@/stores/player-store';
 
 export default function ArtistDetailScreen() {
   const { name } = useLocalSearchParams();
-  const artistName = decodeURIComponent(String(name ?? ''));
+  const artistName = String(name ?? '');
   const tracksAll = useDbStore((s) => s.tracks);
   const isLoaded = useDbStore((s) => s.isLoaded);
   const toggleFavorite = useDbStore((s) => s.toggleFavorite);

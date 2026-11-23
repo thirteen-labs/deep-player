@@ -9,8 +9,8 @@ import { usePlayerStore } from '@/stores/player-store';
 
 export default function AlbumDetailScreen() {
   const { artist: artistParam, album: albumParam } = useLocalSearchParams();
-  const artistName = artistParam === '_' ? '' : decodeURIComponent(String(artistParam ?? ''));
-  const albumName = decodeURIComponent(String(albumParam ?? ''));
+  const artistName = artistParam === '_' ? '' : String(artistParam ?? '');
+  const albumName = String(albumParam ?? '');
   const tracksAll = useDbStore((s) => s.tracks);
   const isLoaded = useDbStore((s) => s.isLoaded);
   const toggleFavorite = useDbStore((s) => s.toggleFavorite);

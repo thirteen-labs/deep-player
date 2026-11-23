@@ -8,19 +8,20 @@ import {
 } from 'expo-router/ui';
 import { Film, Folder, House, Music2, UserRound, type LucideIcon } from 'lucide-react-native';
 import { type Ref } from 'react';
-import { Pressable, View, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
 import { GlassView } from '@/components/ui/glass-view';
 import { ThemedIcon } from '@/components/ui/themed-icon';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 const TABS = [
   { name: 'home', href: '/home', label: 'Home', icon: House },
   { name: 'folders', href: '/folders', label: 'Folders', icon: Folder },
   { name: 'music', href: '/music', label: 'Music', icon: Music2 },
   { name: 'videos', href: '/videos', label: 'Videos', icon: Film },
-  { name: 'user', href: '/user', label: 'User', icon: UserRound },
+  { name: 'user', href: '/user', label: 'Profile', icon: UserRound },
 ] as const;
 
 export default function AppTabs() {
@@ -31,7 +32,7 @@ export default function AppTabs() {
         <CustomTabList>
           {TABS.map((tab) => (
             <TabTrigger key={tab.name} name={tab.name} href={tab.href} asChild>
-              <TabButton icon={tab.icon}>{tab.label}</TabButton>
+              <TabButton label={tab.label} icon={tab.icon} />
             </TabTrigger>
           ))}
         </CustomTabList>
@@ -40,27 +41,43 @@ export default function AppTabs() {
   );
 }
 
-export function TabButton({ children, icon, isFocused, ref, ...props }: TabTriggerSlotProps & { icon: LucideIcon }) {
+type TabButtonProps = TabTriggerSlotProps & { label: string; icon: LucideIcon };
+
+export function TabButton({ label, icon: Icon, isFocused, ref, ...props }: TabButtonProps) {
+  const theme = useTheme();
+
   return (
     <Pressable
       {...props}
       ref={ref as Ref<React.ComponentRef<typeof Pressable>>}
-      accessibilityLabel={typeof children === 'string' ? children : undefined}
-      style={({ pressed }) => pressed && styles.pressed}>
-      <View style={styles.tabButton}>
-        <ThemedIcon icon={icon} size={20} color={isFocused ? 'tint' : 'textSecondary'} />
-        <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'} style={styles.label}>
-          {children}
-        </ThemedText>
-      </View>
+      accessibilityRole="tab"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: Boolean(isFocused) }}
+      style={({ pressed }) => [
+        styles.tabButton,
+        isFocused && { backgroundColor: theme.backgroundSelected },
+        pressed && styles.pressed,
+      ]}>
+      <ThemedIcon
+        icon={Icon}
+        size={22}
+        color={isFocused ? 'tint' : 'textSecondary'}
+        strokeWidth={isFocused ? 2.4 : 1.9}
+        fill={isFocused ? theme.tint : 'none'}
+      />
     </Pressable>
   );
 }
 
 export function CustomTabList(props: TabListProps) {
+  const insets = useSafeAreaInsets();
+  const theme = useTheme();
+
   return (
-    <View {...props} style={styles.tabListContainer}>
-      <GlassView style={styles.innerContainer}>
+    <View
+      {...props}
+      style={[styles.tabListContainer, { paddingBottom: Spacing.two + insets.bottom }]}>
+      <GlassView style={[styles.innerContainer, { borderColor: theme.glassBorder }]}>
         {props.children}
       </GlassView>
     </View>
@@ -70,34 +87,31 @@ export function CustomTabList(props: TabListProps) {
 const styles = StyleSheet.create({
   tabListContainer: {
     position: 'absolute',
-    width: '100%',
-    padding: Spacing.two,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: Spacing.two,
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
   },
   innerContainer: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.one,
+    paddingHorizontal: Spacing.one,
     borderRadius: 24,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
-    flexGrow: 1,
-    gap: Spacing.half,
+    justifyContent: 'space-evenly',
+    gap: Spacing.one,
     maxWidth: MaxContentWidth,
+    width: '100%',
   },
   tabButton: {
+    width: 52,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
-    borderRadius: Spacing.three,
-    minWidth: 64,
-  },
-  label: {
-    fontSize: 11,
+    borderRadius: 18,
   },
   pressed: {
     opacity: 0.7,

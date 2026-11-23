@@ -1,19 +1,19 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Alert, Platform } from 'react-native';
-import { useEffect, useMemo } from 'react';
+import { Alert } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
 
 import { ThemedText } from '@/components/themed-text';
 import { TrackRow } from '@/components/track-row';
 import {
   AppButton,
   EmptyState,
+  NamePromptModal,
   Screen,
   SectionCard,
   TopBar,
 } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { useDbStore, type Track } from '@/lib/db/store';
-import { promptName } from '@/lib/prompt';
 import { useSortStore } from '@/stores/sort-store';
 import { sortTracks } from '@/utils/track-sorting';
 
@@ -36,6 +36,7 @@ export default function PlaylistScreen() {
   const load = useDbStore((s) => s.load);
   const renamePlaylist = useDbStore((s) => s.renamePlaylist);
   const deletePlaylist = useDbStore((s) => s.deletePlaylist);
+  const [isRenaming, setIsRenaming] = useState(false);
 
   useEffect(() => {
     void load();
@@ -43,21 +44,9 @@ export default function PlaylistScreen() {
 
   const title = playlist?.name ?? 'Playlist';
 
-  const rename = () => {
-    if (Platform.OS === 'web') {
-      const name = promptName('New playlist name', title);
-      if (name?.trim()) void renamePlaylist(playlistId, name.trim());
-      return;
-    }
-    Alert.prompt(
-      'Rename playlist',
-      'Enter a new name',
-      (name) => {
-        if (name?.trim()) void renamePlaylist(playlistId, name.trim());
-      },
-      'plain-text',
-      title
-    );
+  const rename = (name: string) => {
+    setIsRenaming(false);
+    if (name.trim()) void renamePlaylist(playlistId, name.trim());
   };
 
   const deleteFlow = () => {
@@ -77,7 +66,7 @@ export default function PlaylistScreen() {
     <Screen header={<TopBar title={title} showUniversalSort />}>
       <SectionCard title="Playlist" gap={Spacing.three}>
         <ThemedText type="subtitle">{title}</ThemedText>
-        <AppButton label="Rename" variant="ghost" size="small" onPress={rename} />
+        <AppButton label="Rename" variant="ghost" size="small" onPress={() => setIsRenaming(true)} />
         <AppButton label="Delete" variant="ghost" size="small" onPress={deleteFlow} />
       </SectionCard>
 
@@ -90,6 +79,16 @@ export default function PlaylistScreen() {
           ))
         )}
       </SectionCard>
+
+      <NamePromptModal
+        key={isRenaming ? `rename-${title}-open` : `rename-${title}-closed`}
+        visible={isRenaming}
+        title="Rename playlist"
+        description="Enter a new name for this playlist."
+        value={title}
+        onCancel={() => setIsRenaming(false)}
+        onConfirm={rename}
+      />
     </Screen>
   );
 }

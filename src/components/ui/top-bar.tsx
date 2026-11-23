@@ -27,7 +27,7 @@ export function TopBar({
   showSmartSort = false,
   showSearch = false,
   onSearchPress,
-  showNotifications = true,
+  showNotifications = false,
   showProfile = true,
 }: TopBarProps) {
   const { width } = useWindowDimensions();

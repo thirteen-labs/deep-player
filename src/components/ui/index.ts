@@ -1,6 +1,7 @@
 export * from './app-bottom-sheet';
 export * from './app-button';
 export * from './app-logo';
+export * from './continue-card';
 export * from './empty-state';
 export * from './folder-row';
 export * from './glass-view';
@@ -9,6 +10,7 @@ export * from './info-row';
 export * from './loading-state';
 export * from './loader';
 export * from './media-artwork';
+export * from './name-prompt-modal';
 export * from './now-playing-card';
 export * from './permission-status-row';
 export * from './pressable-scale';

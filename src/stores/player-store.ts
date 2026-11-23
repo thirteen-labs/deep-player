@@ -11,6 +11,32 @@ export type ShuffleMode = 'off' | 'on';
 
 let lastTrackId: string | null = null;
 
+/** Only write progress to SQLite every few seconds (plus explicit stop/switch events). */
+const PERSIST_INTERVAL_SECONDS = 5;
+let lastPersisted: { trackId: string; seconds: number } | null = null;
+/** Ignores early status ticks while a resume/seek is still being applied. */
+let resumeGuard: { trackId: string; target: number } | null = null;
+
+function persistProgress(trackId: string | null | undefined, seconds: number, force = false) {
+  if (!trackId) return;
+  const value = Math.max(0, seconds);
+  if (
+    !force &&
+    lastPersisted?.trackId === trackId &&
+    Math.abs(value - lastPersisted.seconds) < PERSIST_INTERVAL_SECONDS
+  ) {
+    return;
+  }
+  lastPersisted = { trackId, seconds: value };
+  void useDbStore.getState().setPlaybackPosition(trackId, value);
+}
+
+function clearPersistedProgress(trackId: string | null | undefined) {
+  if (!trackId) return;
+  lastPersisted = { trackId, seconds: 0 };
+  void useDbStore.getState().setPlaybackPosition(trackId, 0);
+}
+
 export type PlayerStore = {
   /** The track currently assigned to the shared player. */
   track: Track | null;
@@ -95,11 +121,30 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     if (state.isPlaying !== status.playing) update.isPlaying = status.playing;
     if (state.speed !== status.playbackRate) update.speed = status.playbackRate;
     if (status.duration > 0 && state.duration !== status.duration) update.duration = status.duration;
-    if (state.currentTime !== status.currentTime) update.currentTime = status.currentTime;
+
+    const trackId = state.track?.id ?? null;
+    if (status.didJustFinish) resumeGuard = null;
+    const waitingForResume =
+      !status.didJustFinish &&
+      trackId != null &&
+      resumeGuard?.trackId === trackId &&
+      status.currentTime < resumeGuard.target - 2;
+    if (!waitingForResume && state.currentTime !== status.currentTime) {
+      update.currentTime = status.currentTime;
+    }
     if (Object.keys(update).length > 0) set(update);
 
+    // Keep a resumable position without hammering SQLite on every status tick.
+    if (!waitingForResume) {
+      if (resumeGuard?.trackId === trackId) resumeGuard = null;
+      if (status.didJustFinish && state.track) {
+        clearPersistedProgress(state.track.id);
+      } else if (status.playing && state.track && status.duration > 0) {
+        persistProgress(state.track.id, status.currentTime);
+      }
+    }
+
     // Refresh the lock-screen metadata when the playing track changes.
-    const trackId = state.track?.id ?? null;
     if (trackId && trackId !== lastTrackId) {
       lastTrackId = trackId;
       state.setLockScreenMetadata(state.track);
@@ -116,31 +161,39 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 
   play: (track) => {
     const { audioPlayer } = get();
-    set({ track, isPlaying: true, currentTime: 0, duration: track.durationMs / 1000 });
+    const durationSeconds = track.durationMs / 1000;
+    const saved = useDbStore.getState().playbackPositions[track.id] ?? 0;
+    const canResume = saved > 5 && (durationSeconds <= 0 || saved < durationSeconds - 10);
+    const resumeAt = canResume ? saved : 0;
+    lastPersisted = { trackId: track.id, seconds: resumeAt };
+    resumeGuard = resumeAt > 0 ? { trackId: track.id, target: resumeAt } : null;
+
+    set({ track, isPlaying: true, currentTime: resumeAt, duration: durationSeconds });
     audioPlayer?.setActiveForLockScreen(true, {
       title: track.title || 'Track',
       artist: track.artist || 'Unknown artist',
       albumTitle: track.album || undefined,
       artworkUrl: track.artworkUri ?? undefined,
     });
-    const position = useDbStore.getState().playbackPositions[track.id] ?? 0;
     audioPlayer?.replace(track.localUri ?? track.uri);
-    if (position > 0) {
-      void audioPlayer?.seekTo(position);
+    if (resumeAt > 0) {
+      void audioPlayer?.seekTo(resumeAt);
     }
     audioPlayer?.play();
-    useDbStore.getState().recordPlayback(track.id);
+    void useDbStore.getState().recordPlayback(track.id);
   },
 
   pause: () => {
-    const { audioPlayer } = get();
+    const { audioPlayer, track, currentTime } = get();
+    persistProgress(track?.id, currentTime, true);
     set({ isPlaying: false });
     audioPlayer?.pause();
   },
 
   togglePlay: () => {
-    const { audioPlayer, isPlaying } = get();
+    const { audioPlayer, isPlaying, track, currentTime } = get();
     if (isPlaying) {
+      persistProgress(track?.id, currentTime, true);
       set({ isPlaying: false });
       audioPlayer?.pause();
     } else {
@@ -150,7 +203,11 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   },
 
   next: () => {
-    const { audioPlayer, queue, queueIndex, repeatMode } = get();
+    const { audioPlayer, queue, queueIndex, repeatMode, track: current, currentTime, finishSignal } = get();
+    // A finished track is cleared by syncStatus; manual skips keep their position.
+    if (finishSignal === 0) persistProgress(current?.id, currentTime, true);
+    lastPersisted = null;
+    resumeGuard = null;
     const nextIndex = queueIndex + 1;
     let target: Track | null = null;
     let targetIndex = nextIndex;
@@ -188,12 +245,16 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   },
 
   previous: () => {
-    const { audioPlayer, queue, queueIndex, currentTime } = get();
+    const { audioPlayer, queue, queueIndex, currentTime, track: current } = get();
     if (currentTime > 3) {
+      persistProgress(current?.id, 0, true);
       audioPlayer?.seekTo(0);
       set({ currentTime: 0 });
       return;
     }
+    persistProgress(current?.id, currentTime, true);
+    lastPersisted = null;
+    resumeGuard = null;
     if (queueIndex > 0) {
       const target = queue[queueIndex - 1];
       set({
@@ -219,9 +280,11 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   },
 
   seekTo: (seconds) => {
-    const { audioPlayer } = get();
-    set({ currentTime: seconds });
-    audioPlayer?.seekTo(seconds);
+    const { audioPlayer, track } = get();
+    const target = Math.max(0, seconds);
+    resumeGuard = track ? { trackId: track.id, target } : null;
+    set({ currentTime: target });
+    audioPlayer?.seekTo(target);
   },
 
   setQueue: (tracks, index = 0) => set({ queue: tracks, queueIndex: index }),
@@ -257,6 +320,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
       queueIndex: s.queueIndex > index ? s.queueIndex - 1 : s.queueIndex,
     }));
     if (wasCurrent) {
+      resumeGuard = null;
       if (nextTrack) {
         set({
           track: nextTrack,
@@ -298,7 +362,9 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   },
 
   clearQueue: () => {
-    const { audioPlayer } = get();
+    const { audioPlayer, track, currentTime } = get();
+    persistProgress(track?.id, currentTime, true);
+    resumeGuard = null;
     audioPlayer?.pause();
     set({ queue: [], queueIndex: -1, track: null, isPlaying: false, currentTime: 0, duration: 0 });
   },

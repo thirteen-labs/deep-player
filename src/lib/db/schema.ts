@@ -52,6 +52,13 @@ export type PlaylistTrackRow = {
   position: number;
 };
 
+/** Membership row for a folder (used by generated video series folders). */
+export type FolderTrackRow = {
+  folderId: string;
+  trackId: string;
+  position: number;
+};
+
 /** A distinct (artist, album) pair with tracks. */
 export type AlbumRow = {
   title: string;
@@ -104,6 +111,13 @@ const SCHEMA_SQL = `
     trackId TEXT NOT NULL,
     position INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (playlistId, trackId)
+  );
+
+  CREATE TABLE IF NOT EXISTS folderTracks (
+    folderId TEXT NOT NULL,
+    trackId TEXT NOT NULL,
+    position INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (folderId, trackId)
   );
 `;
 

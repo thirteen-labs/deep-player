@@ -25,8 +25,10 @@ export default function VideosScreen() {
   const isLoaded = useDbStore((s) => s.isLoaded);
   const load = useDbStore((s) => s.load);
   const toggleFavorite = useDbStore((s) => s.toggleFavorite);
+  const positions = useDbStore((s) => s.playbackPositions);
 
   useEffect(() => {
+    if (isLoaded) return;
     void (async () => {
       try {
         await scanVideos();
@@ -35,7 +37,7 @@ export default function VideosScreen() {
         console.warn('Video scan failed', error);
       }
     })();
-  }, [load]);
+  }, [isLoaded, load]);
 
   return (
     <Screen header={<TopBar title="Videos" showUniversalSort />}>
@@ -53,6 +55,7 @@ export default function VideosScreen() {
             renderItem={({ item }) => (
               <VideoRow
                 track={item}
+                position={positions[item.id] ?? 0}
                 onPlay={() => router.push(`/videos/${encodeURIComponent(item.id)}`)}
                 onFavorite={() => void toggleFavorite(item.id)}
               />
@@ -64,8 +67,19 @@ export default function VideosScreen() {
   );
 }
 
-function VideoRow({ track, onPlay, onFavorite }: { track: Track; onPlay: () => void; onFavorite: () => void }) {
-  const subtitle = track.durationMs > 0 ? formatTime(track.durationMs / 1000) : '0:00';
+function VideoRow({
+  track,
+  position,
+  onPlay,
+  onFavorite,
+}: {
+  track: Track;
+  position: number;
+  onPlay: () => void;
+  onFavorite: () => void;
+}) {
+  const duration = track.durationMs > 0 ? formatTime(track.durationMs / 1000) : '0:00';
+  const subtitle = position > 10 ? `Resume ${formatTime(position)} · ${duration}` : duration;
   return (
     <View style={styles.row}>
       <Pressable style={styles.content} onPress={onPlay} accessibilityRole="button" accessibilityLabel={`Play ${track.title}`}>

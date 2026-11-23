@@ -9,28 +9,43 @@ export default function AppTabs() {
     <NativeTabs
       blurEffect={theme.isDark ? 'systemMaterialDark' : 'systemMaterialLight'}
       backgroundColor={theme.tabBarBackground}
-      indicatorColor={theme.backgroundElement}
-      labelStyle={{ selected: { color: theme.text } }}
+      indicatorColor={theme.backgroundSelected}
+      labelVisibilityMode="unlabeled"
       iconColor={{ default: theme.textSecondary, selected: theme.tint }}>
-      <NativeTabs.Trigger name="home">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="house" md="home" />
+      <NativeTabs.Trigger name="home" accessibilityLabel="Home">
+        <NativeTabs.Trigger.Label hidden>Home</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'house', selected: 'house.fill' }}
+          md={{ default: 'home', selected: 'home_filled' }}
+        />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="folders">
-        <NativeTabs.Trigger.Label>Folders</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="folder" md="folder" />
+      <NativeTabs.Trigger name="folders" accessibilityLabel="Folders">
+        <NativeTabs.Trigger.Label hidden>Folders</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'folder', selected: 'folder.fill' }}
+          md={{ default: 'folder', selected: 'folder_open' }}
+        />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="music">
-        <NativeTabs.Trigger.Label>Music</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="music.note" md="library_music" />
+      <NativeTabs.Trigger name="music" accessibilityLabel="Music">
+        <NativeTabs.Trigger.Label hidden>Music</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'music.note', selected: 'music.note.list' }}
+          md={{ default: 'music_note', selected: 'library_music' }}
+        />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="videos">
-        <NativeTabs.Trigger.Label>Videos</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="video" md="videocam" />
+      <NativeTabs.Trigger name="videos" accessibilityLabel="Videos">
+        <NativeTabs.Trigger.Label hidden>Videos</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'video', selected: 'video.fill' }}
+          md={{ default: 'videocam', selected: 'video_library' }}
+        />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="user">
-        <NativeTabs.Trigger.Label>User</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="person" md="person" />
+      <NativeTabs.Trigger name="user" accessibilityLabel="Profile">
+        <NativeTabs.Trigger.Label hidden>Profile</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'person', selected: 'person.fill' }}
+          md={{ default: 'person_outline', selected: 'person' }}
+        />
       </NativeTabs.Trigger>
     </NativeTabs>
   );

@@ -9,6 +9,8 @@ type ThemedIconProps = {
   size?: number;
   /** A palette key (e.g. "tint") or any explicit color string. */
   color?: ThemeColor | string;
+  /** SVG fill. Use a palette key or 'none' for outline-only icons. */
+  fill?: ThemeColor | string;
   strokeWidth?: number;
   style?: StyleProp<ViewStyle>;
 };
@@ -18,6 +20,7 @@ export function ThemedIcon({
   icon: Icon,
   size = 20,
   color,
+  fill,
   strokeWidth = 2,
   style,
 }: ThemedIconProps) {
@@ -30,6 +33,12 @@ export function ThemedIcon({
       : isPaletteKey
         ? theme[color as ThemeColor]
         : color;
+  const resolvedFill =
+    fill == null
+      ? 'none'
+      : THEME_COLOR_KEYS.some((key) => key === fill)
+        ? theme[fill as ThemeColor]
+        : fill;
 
-  return <Icon size={size} color={resolved} strokeWidth={strokeWidth} style={style} />;
+  return <Icon size={size} color={resolved} fill={resolvedFill} strokeWidth={strokeWidth} style={style} />;
 }

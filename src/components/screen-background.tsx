@@ -29,9 +29,9 @@ export function ScreenBackground({ children, style }: Props) {
             ? theme.isDark
               ? ['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.35)', theme.background + 'CC']
               : ['rgba(255,255,255,0.10)', 'rgba(255,255,255,0.25)', theme.background + 'D9']
-            : [theme.background, theme.background]
+            : [theme.backgroundElement, theme.background]
         }
-        locations={theme.backgroundImage ? [0, 0.45, 1] : [0, 1]}
+        locations={theme.backgroundImage ? [0, 0.45, 1] : [0, 0.7]}
         style={StyleSheet.absoluteFill}
       />
       <View style={styles.content}>{children}</View>
