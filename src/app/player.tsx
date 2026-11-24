@@ -21,6 +21,7 @@ import { useMemo, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { ScreenBackground } from '@/components/screen-background';
+import { ThemeOverrideProvider } from '@/components/theme-override';
 import { ThemedText } from '@/components/themed-text';
 import {
   AppButton,
@@ -33,6 +34,7 @@ import {
   VolumeSlider,
 } from '@/components/ui';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useArtworkPalette } from '@/hooks/use-artwork-palette';
 import { useMediaShortcuts } from '@/hooks/use-media-shortcuts';
 import { useTheme } from '@/hooks/use-theme';
 import { useDbStore } from '@/lib/db/store';
@@ -45,6 +47,7 @@ export default function AudioPlayerScreen() {
   const [showQueue, setShowQueue] = useState(false);
 
   const track = usePlayerStore((s) => s.track);
+  const artworkPalette = useArtworkPalette(track?.artworkUri);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const currentTime = usePlayerStore((s) => s.currentTime);
   const duration = usePlayerStore((s) => s.duration);
@@ -89,220 +92,237 @@ export default function AudioPlayerScreen() {
   useMediaShortcuts(shortcuts);
 
   const artworkSize = Math.min(340, Math.max(220, width - Spacing.four * 3));
+  const playerTheme = artworkPalette ?? theme;
   const RepeatIcon = repeatMode === 'one' ? Repeat1 : Repeat;
 
   if (!track) {
     return (
-      <ScreenBackground>
-        <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.empty}>
-          <EmptyState
-            icon={Music2}
-            message="Nothing playing"
-            description="Open the music library to pick a track and it will show up here."
-          />
-          <AppButton label="Browse music" icon={Music2} onPress={() => router.push('/music')} />
-        </ScrollView>
-      </ScreenBackground>
+      <ThemeOverrideProvider theme={playerTheme}>
+        <ScreenBackground>
+          <ScrollView
+            contentInsetAdjustmentBehavior="automatic"
+            contentContainerStyle={styles.empty}
+          >
+            <EmptyState
+              icon={Music2}
+              message="Nothing playing"
+              description="Open the music library to pick a track and it will show up here."
+            />
+            <AppButton label="Browse music" icon={Music2} onPress={() => router.push('/music')} />
+          </ScrollView>
+        </ScreenBackground>
+      </ThemeOverrideProvider>
     );
   }
 
   return (
-    <ScreenBackground>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <IconButton
-            icon={ChevronDown}
-            accessibilityLabel="Close player"
-            onPress={() => router.back()}
-          />
-          <View style={styles.headerCopy}>
-            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.eyebrow}>
-              NOW PLAYING
-            </ThemedText>
-            <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-              {track.album || 'Deep Player'}
-            </ThemedText>
-          </View>
-          <IconButton
-            icon={ListMusic}
-            accessibilityLabel={showQueue ? 'Hide queue' : 'Show queue'}
-            active={showQueue}
-            onPress={() => setShowQueue((visible) => !visible)}
-          />
-        </View>
-
-        <View style={styles.hero}>
-          <MediaArtwork
-            uri={track.artworkUri}
-            size={artworkSize}
-            radius={28}
-            style={styles.artwork}
-          />
-          <View style={styles.trackInfo}>
-            <View style={styles.trackCopy}>
-              <ThemedText type="subtitle" style={styles.title} numberOfLines={2} selectable>
-                {track.title || track.uri}
+    <ThemeOverrideProvider theme={playerTheme}>
+      <ScreenBackground backdropBlur={artworkPalette ? 36 : 0}>
+        <ScrollView
+          contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={styles.content}
+        >
+          <View style={styles.header}>
+            <IconButton
+              icon={ChevronDown}
+              accessibilityLabel="Close player"
+              onPress={() => router.back()}
+            />
+            <View style={styles.headerCopy}>
+              <ThemedText type="smallBold" themeColor="textSecondary" style={styles.eyebrow}>
+                NOW PLAYING
               </ThemedText>
-              <ThemedText type="default" themeColor="textSecondary" numberOfLines={1} selectable>
-                {track.artist || 'Unknown artist'}
+              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                {track.album || 'Deep Player'}
               </ThemedText>
             </View>
             <IconButton
-              icon={Heart}
-              accessibilityLabel={track.favorite ? 'Remove from favorites' : 'Add to favorites'}
-              active={track.favorite}
-              onPress={() => toggleFavorite(track.id)}
+              icon={ListMusic}
+              accessibilityLabel={showQueue ? 'Hide queue' : 'Show queue'}
+              active={showQueue}
+              onPress={() => setShowQueue((visible) => !visible)}
             />
           </View>
-        </View>
 
-        <Scrubber currentTime={currentTime} duration={duration} onSeek={seekTo} />
-
-        <View style={styles.transport}>
-          <IconButton
-            icon={Shuffle}
-            accessibilityLabel="Shuffle"
-            active={shuffleMode === 'on'}
-            onPress={toggleShuffle}
-          />
-          <IconButton
-            icon={SkipBack}
-            accessibilityLabel="Previous track"
-            size={54}
-            iconSize={26}
-            onPress={previous}
-          />
-          <IconButton
-            icon={isPlaying ? Pause : Play}
-            accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
-            variant="primary"
-            size={72}
-            iconSize={32}
-            onPress={togglePlay}
-          />
-          <IconButton
-            icon={SkipForward}
-            accessibilityLabel="Next track"
-            size={54}
-            iconSize={26}
-            onPress={next}
-          />
-          <IconButton
-            icon={RepeatIcon}
-            accessibilityLabel={
-              repeatMode === 'one' ? 'Repeat one' : repeatMode === 'all' ? 'Repeat all' : 'Repeat off'
-            }
-            active={repeatMode !== 'off'}
-            onPress={toggleRepeat}
-          />
-        </View>
-
-        <View style={styles.settingRow}>
-          <ThemedText type="small" themeColor="textSecondary">
-            Speed
-          </ThemedText>
-          <SegmentedControl
-            options={PLAYBACK_SPEEDS.map((value) => ({ value, label: `${value}×` }))}
-            value={speed}
-            onValueChange={setSpeed}
-          />
-        </View>
-
-        <View style={styles.settingRow}>
-          <IconButton
-            icon={isMuted || volume === 0 ? VolumeX : Volume2}
-            accessibilityLabel={isMuted ? 'Unmute' : 'Mute'}
-            size={36}
-            iconSize={18}
-            onPress={toggleMute}
-          />
-          <VolumeSlider volume={volume} muted={isMuted} onVolumeChange={setVolume} />
-          <ThemedText type="small" themeColor="textSecondary" style={styles.volumeValue}>
-            {isMuted ? 'Muted' : `${Math.round(volume * 100)}%`}
-          </ThemedText>
-        </View>
-
-        {showQueue ? (
-          <View style={styles.queue}>
-            <View style={styles.queueHeader}>
-              <ThemedText type="smallBold">Queue ({queue.length})</ThemedText>
+          <View style={styles.hero}>
+            <MediaArtwork
+              uri={track.artworkUri}
+              size={artworkSize}
+              radius={28}
+              style={styles.artwork}
+            />
+            <View style={styles.trackInfo}>
+              <View style={styles.trackCopy}>
+                <ThemedText type="subtitle" style={styles.title} numberOfLines={2} selectable>
+                  {track.title || track.uri}
+                </ThemedText>
+                <ThemedText type="default" themeColor="textSecondary" numberOfLines={1} selectable>
+                  {track.artist || 'Unknown artist'}
+                </ThemedText>
+              </View>
               <IconButton
-                icon={X}
-                accessibilityLabel="Hide queue"
-                size={32}
-                iconSize={16}
-                onPress={() => setShowQueue(false)}
+                icon={Heart}
+                accessibilityLabel={track.favorite ? 'Remove from favorites' : 'Add to favorites'}
+                active={track.favorite}
+                onPress={() => toggleFavorite(track.id)}
               />
             </View>
-            {queue.length === 0 ? (
-              <ThemedText type="small" themeColor="textSecondary">
-                The queue is empty. Add tracks from any library list.
-              </ThemedText>
-            ) : (
-              queue.map((item, index) => (
-                <View
-                  key={`${item.id}-${index}`}
-                  style={[
-                    styles.queueRow,
-                    index === queueIndex && { backgroundColor: theme.backgroundSelected },
-                  ]}>
-                  <PressableScale
-                    accessibilityRole="button"
-                    accessibilityLabel={`Play ${item.title}`}
-                    onPress={() => playAt(index)}
-                    style={styles.queueInfo}>
-                    <MediaArtwork uri={item.artworkUri} size={40} radius={Spacing.one} />
-                    <View style={styles.queueCopy}>
-                      <ThemedText type="smallBold" numberOfLines={1}>
-                        {item.title || item.uri}
-                      </ThemedText>
-                      <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-                        {item.artist || 'Unknown artist'}
-                      </ThemedText>
-                    </View>
-                  </PressableScale>
-                  <IconButton
-                    icon={ChevronUp}
-                    accessibilityLabel="Move up"
-                    size={30}
-                    iconSize={15}
-                    variant="plain"
-                    disabled={index === 0}
-                    onPress={() => moveQueueItem(index, index - 1)}
-                  />
-                  <IconButton
-                    icon={ChevronDown}
-                    accessibilityLabel="Move down"
-                    size={30}
-                    iconSize={15}
-                    variant="plain"
-                    disabled={index === queue.length - 1}
-                    onPress={() => moveQueueItem(index, index + 1)}
-                  />
-                  <IconButton
-                    icon={Trash2}
-                    accessibilityLabel="Remove from queue"
-                    size={30}
-                    iconSize={15}
-                    variant="plain"
-                    onPress={() => removeFromQueue(index)}
-                  />
-                </View>
-              ))
-            )}
           </View>
-        ) : null}
 
-        {Platform.OS === 'web' ? (
-          <ThemedText type="small" themeColor="textSecondary" style={styles.hint} selectable>
-            Shortcuts — Space/K play · ←/→ seek 10s · J/L seek · N/B tracks · 9/0 volume · M mute · S
-            speed · Esc close
-          </ThemedText>
-        ) : null}
+          <Scrubber currentTime={currentTime} duration={duration} onSeek={seekTo} />
 
-        <View style={{ height: Spacing.two }} />
-      </ScrollView>
-    </ScreenBackground>
+          <View style={styles.transport}>
+            <IconButton
+              icon={Shuffle}
+              accessibilityLabel="Shuffle"
+              active={shuffleMode === 'on'}
+              onPress={toggleShuffle}
+            />
+            <IconButton
+              icon={SkipBack}
+              accessibilityLabel="Previous track"
+              size={54}
+              iconSize={26}
+              onPress={previous}
+            />
+            <IconButton
+              icon={isPlaying ? Pause : Play}
+              accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
+              variant="primary"
+              size={72}
+              iconSize={32}
+              onPress={togglePlay}
+            />
+            <IconButton
+              icon={SkipForward}
+              accessibilityLabel="Next track"
+              size={54}
+              iconSize={26}
+              onPress={next}
+            />
+            <IconButton
+              icon={RepeatIcon}
+              accessibilityLabel={
+                repeatMode === 'one'
+                  ? 'Repeat one'
+                  : repeatMode === 'all'
+                    ? 'Repeat all'
+                    : 'Repeat off'
+              }
+              active={repeatMode !== 'off'}
+              onPress={toggleRepeat}
+            />
+          </View>
+
+          <View style={styles.settingRow}>
+            <ThemedText type="small" themeColor="textSecondary">
+              Speed
+            </ThemedText>
+            <SegmentedControl
+              options={PLAYBACK_SPEEDS.map((value) => ({ value, label: `${value}×` }))}
+              value={speed}
+              onValueChange={setSpeed}
+            />
+          </View>
+
+          <View style={styles.settingRow}>
+            <IconButton
+              icon={isMuted || volume === 0 ? VolumeX : Volume2}
+              accessibilityLabel={isMuted ? 'Unmute' : 'Mute'}
+              size={36}
+              iconSize={18}
+              onPress={toggleMute}
+            />
+            <VolumeSlider volume={volume} muted={isMuted} onVolumeChange={setVolume} />
+            <ThemedText type="small" themeColor="textSecondary" style={styles.volumeValue}>
+              {isMuted ? 'Muted' : `${Math.round(volume * 100)}%`}
+            </ThemedText>
+          </View>
+
+          {showQueue ? (
+            <View style={styles.queue}>
+              <View style={styles.queueHeader}>
+                <ThemedText type="smallBold">Queue ({queue.length})</ThemedText>
+                <IconButton
+                  icon={X}
+                  accessibilityLabel="Hide queue"
+                  size={32}
+                  iconSize={16}
+                  onPress={() => setShowQueue(false)}
+                />
+              </View>
+              {queue.length === 0 ? (
+                <ThemedText type="small" themeColor="textSecondary">
+                  The queue is empty. Add tracks from any library list.
+                </ThemedText>
+              ) : (
+                queue.map((item, index) => (
+                  <View
+                    key={`${item.id}-${index}`}
+                    style={[
+                      styles.queueRow,
+                      index === queueIndex && { backgroundColor: playerTheme.backgroundSelected },
+                    ]}
+                  >
+                    <PressableScale
+                      accessibilityRole="button"
+                      accessibilityLabel={`Play ${item.title}`}
+                      onPress={() => playAt(index)}
+                      style={styles.queueInfo}
+                    >
+                      <MediaArtwork uri={item.artworkUri} size={40} radius={Spacing.one} />
+                      <View style={styles.queueCopy}>
+                        <ThemedText type="smallBold" numberOfLines={1}>
+                          {item.title || item.uri}
+                        </ThemedText>
+                        <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                          {item.artist || 'Unknown artist'}
+                        </ThemedText>
+                      </View>
+                    </PressableScale>
+                    <IconButton
+                      icon={ChevronUp}
+                      accessibilityLabel="Move up"
+                      size={30}
+                      iconSize={15}
+                      variant="plain"
+                      disabled={index === 0}
+                      onPress={() => moveQueueItem(index, index - 1)}
+                    />
+                    <IconButton
+                      icon={ChevronDown}
+                      accessibilityLabel="Move down"
+                      size={30}
+                      iconSize={15}
+                      variant="plain"
+                      disabled={index === queue.length - 1}
+                      onPress={() => moveQueueItem(index, index + 1)}
+                    />
+                    <IconButton
+                      icon={Trash2}
+                      accessibilityLabel="Remove from queue"
+                      size={30}
+                      iconSize={15}
+                      variant="plain"
+                      onPress={() => removeFromQueue(index)}
+                    />
+                  </View>
+                ))
+              )}
+            </View>
+          ) : null}
+
+          {Platform.OS === 'web' ? (
+            <ThemedText type="small" themeColor="textSecondary" style={styles.hint} selectable>
+              Shortcuts — Space/K play · ←/→ seek 10s · J/L seek · N/B tracks · 9/0 volume · M mute
+              · S speed · Esc close
+            </ThemedText>
+          ) : null}
+
+          <View style={{ height: Spacing.two }} />
+        </ScrollView>
+      </ScreenBackground>
+    </ThemeOverrideProvider>
   );
 }
 

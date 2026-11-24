@@ -1,4 +1,3 @@
-import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
@@ -37,45 +36,4 @@ export async function initializeNotifications(): Promise<void> {
       sound: undefined,
     });
   }
-}
-
-export async function scheduleLocalNotification(params: {
-  title: string;
-  body: string;
-  seconds?: number;
-  data?: Record<string, unknown>;
-}): Promise<string | null> {
-  if (!isNotificationSupported()) return null;
-
-  const { title, body, seconds = 1, data } = params;
-  try {
-    return await Notifications.scheduleNotificationAsync({
-      content: { title, body, data: data ?? {} },
-      trigger:
-        seconds <= 0
-          ? null
-          : {
-              type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-              seconds,
-            },
-    });
-  } catch {
-    return null;
-  }
-}
-
-export async function cancelAllNotifications(): Promise<void> {
-  if (!isNotificationSupported()) return;
-  try {
-    await Notifications.cancelAllScheduledNotificationsAsync();
-  } catch {
-    // no-op
-  }
-}
-
-export function getExpoProjectId(): string | undefined {
-  return (
-    Constants.easConfig?.projectId ??
-    (Constants.expoConfig?.extra as { eas?: { projectId?: string } } | undefined)?.eas?.projectId
-  );
 }

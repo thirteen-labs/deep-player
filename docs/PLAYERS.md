@@ -1,8 +1,9 @@
 # Player design
 
 Deep Player uses one engine per media type: `expo-audio` for music and `expo-video`
-for video. Both are first-party Expo modules, work across iOS, Android and web,
-and are included in Expo Go. The player UIs borrow mpv's interaction model
+for video. Both are first-party Expo modules that work across iOS, Android and
+web. Because they use native plugins and foreground services, a development
+build is required on devices. The player UIs borrow mpv's interaction model
 (direct seeking, speed cycling, an on-screen display that gets out of the way,
 and keyboard shortcuts) without trying to embed mpv itself.
 
@@ -34,6 +35,7 @@ speed control, and controls that auto-hide while watching.
 | State | `src/stores/player-store.ts` | Track, queue, repeat, shuffle, speed, volume, progress persistence. |
 | Mini bar | `src/components/ui/now-playing-card.tsx` | Compact now-playing row on the Music tab; taps open the full player. |
 | Full player | `src/app/player.tsx` | Artwork, transport, scrubber, speed/volume, queue, favorites. |
+| Adaptive color | `src/hooks/use-artwork-palette.ts`, `src/utils/color.ts`, `src/components/theme-override.tsx` | Extracts artwork colors and scopes them to the player surfaces. |
 
 Key behaviors:
 
@@ -44,6 +46,11 @@ Key behaviors:
 - Shuffle reorders the upcoming queue while keeping the current track first.
 - The lock screen / notification is updated with title, artist, album and
   artwork for the active track, and background playback stays active.
+- The full player and mini bar derive their tint, accents, text and blurred
+  backdrop from the active artwork. Extraction uses `react-native-image-colors`
+  and is scoped with a theme override, so the rest of the app keeps the user's
+  selected theme. Missing artwork or a failed extraction falls back to the
+  active theme's tint.
 
 ## Video player
 

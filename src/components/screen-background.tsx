@@ -7,9 +7,11 @@ import { useTheme } from '@/hooks/use-theme';
 
 type Props = PropsWithChildren<{
   style?: StyleProp<ViewStyle>;
+  /** Blur applied to the background image; useful for artwork backdrops. */
+  backdropBlur?: number;
 }>;
 
-export function ScreenBackground({ children, style }: Props) {
+export function ScreenBackground({ children, style, backdropBlur }: Props) {
   const theme = useTheme();
 
   return (
@@ -21,6 +23,7 @@ export function ScreenBackground({ children, style }: Props) {
           contentFit="cover"
           transition={300}
           cachePolicy="memory-disk"
+          blurRadius={backdropBlur}
         />
       ) : null}
       <LinearGradient

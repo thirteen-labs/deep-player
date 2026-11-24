@@ -50,11 +50,6 @@ export function PermissionRow({
   );
 }
 
-/** Back-compat alias for the original media-library-only component name. */
-export function PermissionStatusRow({ status, onRequest }: { status?: string | null; onRequest: () => void }) {
-  return <PermissionRow label="Media library" status={status ?? 'undetermined'} onRequest={onRequest} />;
-}
-
 const styles = StyleSheet.create({
   row: {
     gap: 4,

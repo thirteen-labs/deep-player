@@ -274,11 +274,6 @@ export const THEME_COLOR_KEYS: readonly ThemeColor[] = [
   'accent',
 ];
 
-export const Colors = {
-  light: Themes.light,
-  dark: Themes.dark,
-} as const;
-
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */

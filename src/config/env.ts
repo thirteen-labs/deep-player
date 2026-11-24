@@ -39,5 +39,3 @@ export const env = {
   logLevel: readLogLevel(),
   isDev: __DEV__,
 } as const;
-
-export type Env = typeof env;

@@ -21,7 +21,6 @@ export * from './section-card';
 export * from './segmented-control';
 export * from './sort-menu-button';
 export * from './themed-icon';
-export * from './toggle-chip';
 export * from './top-bar';
 export * from './track-list';
 export * from './volume-slider';

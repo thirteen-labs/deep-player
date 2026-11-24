@@ -1,6 +1,5 @@
 import { Directory, File, Paths } from 'expo-file-system';
 
-import { useDbStore } from '@/lib/db/store';
 import type { Track } from '@/lib/db/schema';
 
 const CACHE_DIR = 'cached-audio';
@@ -56,23 +55,5 @@ export async function cacheArtwork(track: Track): Promise<string | null> {
     return downloaded.uri;
   } catch {
     return null;
-  }
-}
-
-/**
- * Downloads the tracks that have no local copy yet, persisting `localUri` on
- * each. Best effort: failures are ignored so they never block the UI.
- */
-export async function cacheNewTracks(tracks: Track[]): Promise<void> {
-  for (const track of tracks) {
-    if (track.localUri || !isNetworkUri(track.uri)) continue;
-    try {
-      const uri = await cacheTrack(track);
-      if (uri) {
-        await useDbStore.getState().setTrackLocalUri(track.id, uri);
-      }
-    } catch {
-      // Ignore — caching is best effort.
-    }
   }
 }
