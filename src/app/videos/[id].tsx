@@ -1,16 +1,16 @@
 import { useEvent, useEventListener } from 'expo';
 import {
   Check,
-  ChevronLeft,
-  Maximize2,
+  NavArrowLeft,
+  Maximize,
   Pause,
-  PictureInPicture2,
+  MultiWindow,
   Play,
-  RotateCcw,
-  RotateCw,
-  Volume2,
-  VolumeX,
-} from 'lucide-react-native';
+  Undo,
+  Redo,
+  SoundHigh,
+  SoundOff,
+} from 'iconoir-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -21,7 +21,9 @@ import { ThemedText } from '@/components/themed-text';
 import { IconButton, PressableScale, Scrubber } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { useMediaShortcuts } from '@/hooks/use-media-shortcuts';
+import { useTheme } from '@/hooks/use-theme';
 import { useDbStore } from '@/lib/db/store';
+import { withAlpha } from '@/utils/color';
 
 const SAVE_INTERVAL_SECONDS = 5;
 const MIN_SAVE_SECONDS = 10;
@@ -35,6 +37,7 @@ const VIDEO_SPEEDS = [1, 1.25, 1.5, 2, 0.75, 0.5] as const;
  */
 export default function VideoPlayerScreen() {
   const { id } = useLocalSearchParams();
+  const theme = useTheme();
   const trackId = String(id ?? '');
   const track = useDbStore((s) => s.tracks.find((t) => t.id === trackId));
   const setPlaybackPosition = useDbStore((s) => s.setPlaybackPosition);
@@ -251,9 +254,15 @@ export default function VideoPlayerScreen() {
       ? 'Loading video…'
       : null;
 
+  const glassStyle = {
+    backgroundColor: withAlpha(theme.text, 0.12),
+    borderColor: theme.glassBorder,
+    borderWidth: 1,
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.stage}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.stage, { backgroundColor: theme.background }]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Toggle player controls"
@@ -276,48 +285,54 @@ export default function VideoPlayerScreen() {
         />
 
         {statusMessage ? (
-          <View style={styles.statusBadge} pointerEvents="none">
-            <ThemedText type="small" style={styles.brightText}>
+          <View
+            style={[styles.statusBadge, { backgroundColor: withAlpha(theme.background, 0.78) }]}
+            pointerEvents="none">
+            <ThemedText type="small" style={{ color: theme.text }}>
               {statusMessage}
             </ThemedText>
           </View>
         ) : null}
 
         {!isPlaying && !statusMessage ? (
-          <View style={styles.centerBadge} pointerEvents="none">
-            <ThemedIcon icon={Play} size={34} color="background" />
+          <View
+            style={[styles.centerBadge, { backgroundColor: withAlpha(theme.background, 0.68) }]}
+            pointerEvents="none">
+            <ThemedIcon icon={Play} size={34} color="text" />
           </View>
         ) : null}
 
         {controlsShown ? (
           <View style={styles.overlay} pointerEvents="box-none">
-            <View style={styles.topBar}>
+            <View
+              style={[styles.topBar, { backgroundColor: withAlpha(theme.background, 0.72) }]}>
               <IconButton
-                icon={ChevronLeft}
+                icon={NavArrowLeft}
                 accessibilityLabel="Back to videos"
-                style={styles.glassButton}
+                style={[styles.glassButton, glassStyle]}
                 onPress={() => router.back()}
               />
               <View style={styles.titleCopy}>
-                <ThemedText type="smallBold" numberOfLines={1} style={styles.brightText}>
+                <ThemedText type="smallBold" numberOfLines={1} style={{ color: theme.text }}>
                   {track?.title || 'Video'}
                 </ThemedText>
-                <ThemedText type="small" numberOfLines={1} style={styles.mutedText}>
+                <ThemedText type="small" numberOfLines={1} style={{ color: theme.textSecondary }}>
                   {track?.artist || ''}
                 </ThemedText>
               </View>
               {pipSupported ? (
                 <IconButton
-                  icon={PictureInPicture2}
+                  icon={MultiWindow}
                   accessibilityLabel={isInPip ? 'Exit Picture-in-Picture' : 'Picture-in-Picture'}
                   active={isInPip}
-                  style={styles.glassButton}
+                  style={[styles.glassButton, glassStyle]}
                   onPress={() => void togglePictureInPicture()}
                 />
               ) : null}
             </View>
 
-            <View style={styles.bottomBar}>
+            <View
+              style={[styles.bottomBar, { backgroundColor: withAlpha(theme.background, 0.8) }]}>
               <Scrubber
                 currentTime={currentTime}
                 duration={player.duration}
@@ -334,44 +349,44 @@ export default function VideoPlayerScreen() {
                   onPress={togglePlay}
                 />
                 <IconButton
-                  icon={RotateCcw}
+                  icon={Undo}
                   accessibilityLabel="Back 10 seconds"
                   size={42}
                   iconSize={20}
-                  style={styles.glassButton}
+                  style={[styles.glassButton, glassStyle]}
                   onPress={() => seekBy(-10)}
                 />
                 <IconButton
-                  icon={RotateCw}
+                  icon={Redo}
                   accessibilityLabel="Forward 10 seconds"
                   size={42}
                   iconSize={20}
-                  style={styles.glassButton}
+                  style={[styles.glassButton, glassStyle]}
                   onPress={() => seekBy(10)}
                 />
                 <IconButton
-                  icon={isMuted ? VolumeX : Volume2}
+                  icon={isMuted ? SoundOff : SoundHigh}
                   accessibilityLabel={isMuted ? 'Unmute' : 'Mute'}
                   size={42}
                   iconSize={20}
-                  style={styles.glassButton}
+                  style={[styles.glassButton, glassStyle]}
                   onPress={toggleMute}
                 />
                 <PressableScale
                   accessibilityRole="button"
                   accessibilityLabel={`Playback speed ${speed}×`}
                   onPress={cycleSpeed}
-                  style={styles.speedButton}>
-                  <ThemedText type="smallBold" style={styles.brightText}>
+                  style={[styles.speedButton, glassStyle]}>
+                  <ThemedText type="smallBold" style={{ color: theme.text }}>
                     {speed}×
                   </ThemedText>
                 </PressableScale>
                 <IconButton
-                  icon={isFullscreen ? Check : Maximize2}
+                  icon={isFullscreen ? Check : Maximize}
                   accessibilityLabel={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
                   size={42}
                   iconSize={20}
-                  style={styles.glassButton}
+                  style={[styles.glassButton, glassStyle]}
                   onPress={() => void toggleFullscreen()}
                 />
               </View>
@@ -386,11 +401,9 @@ export default function VideoPlayerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
   },
   stage: {
     flex: 1,
-    backgroundColor: '#000000',
     overflow: 'hidden',
   },
   overlay: {
@@ -406,7 +419,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.two,
     padding: Spacing.two,
-    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   titleCopy: {
     flex: 1,
@@ -416,7 +428,6 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     padding: Spacing.two,
     paddingBottom: Spacing.three,
-    backgroundColor: 'rgba(0,0,0,0.55)',
   },
   transport: {
     flexDirection: 'row',
@@ -424,9 +435,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Spacing.half,
   },
-  glassButton: {
-    backgroundColor: 'rgba(255,255,255,0.16)',
-  },
+  glassButton: {},
   speedButton: {
     minWidth: 46,
     height: 42,
@@ -434,13 +443,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 21,
     borderCurve: 'continuous',
-    backgroundColor: 'rgba(255,255,255,0.16)',
-  },
-  brightText: {
-    color: '#FFFFFF',
-  },
-  mutedText: {
-    color: 'rgba(255,255,255,0.68)',
   },
   statusBadge: {
     position: 'absolute',
@@ -450,7 +452,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     borderRadius: 16,
     borderCurve: 'continuous',
-    backgroundColor: 'rgba(0,0,0,0.6)',
   },
   centerBadge: {
     position: 'absolute',
@@ -461,6 +462,5 @@ const styles = StyleSheet.create({
     borderRadius: 38,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.4)',
   },
 });

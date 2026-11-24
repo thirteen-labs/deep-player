@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { formatTime } from '@/utils/format';
+import { withAlpha } from '@/utils/color';
 
 type ScrubberProps = {
   currentTime: number;
@@ -49,12 +50,16 @@ export function Scrubber({
         <View
           style={[
             styles.bar,
-            { backgroundColor: overlay ? 'rgba(255,255,255,0.28)' : theme.backgroundSelected },
+            {
+              backgroundColor: overlay
+                ? withAlpha(theme.text, 0.28)
+                : theme.backgroundSelected,
+            },
           ]}>
           <View
             style={[
               styles.fill,
-              { width: `${percent * 100}%`, backgroundColor: overlay ? '#FFFFFF' : theme.tint },
+              { width: `${percent * 100}%`, backgroundColor: overlay ? theme.accent : theme.tint },
             ]}
           />
           <View
@@ -62,17 +67,25 @@ export function Scrubber({
               styles.thumb,
               {
                 left: `${Math.max(0, percent * 100 - 2)}%`,
-                backgroundColor: overlay ? '#FFFFFF' : theme.tint,
+                backgroundColor: overlay ? theme.accent : theme.tint,
               },
             ]}
           />
         </View>
         {showTimes ? (
           <View style={styles.times}>
-            <ThemedText type="small" themeColor="textSecondary" style={overlay && styles.overlayText} selectable>
+            <ThemedText
+              type="small"
+              themeColor="textSecondary"
+              style={overlay && { color: theme.text }}
+              selectable>
               {formatTime(currentTime)}
             </ThemedText>
-            <ThemedText type="small" themeColor="textSecondary" style={overlay && styles.overlayText} selectable>
+            <ThemedText
+              type="small"
+              themeColor="textSecondary"
+              style={overlay && { color: theme.text }}
+              selectable>
               {duration > 0 ? formatTime(duration) : '—'}
             </ThemedText>
           </View>
@@ -109,8 +122,5 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%',
     marginTop: Spacing.two,
-  },
-  overlayText: {
-    color: 'rgba(255,255,255,0.92)',
   },
 });

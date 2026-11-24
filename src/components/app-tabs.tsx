@@ -16,35 +16,55 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Label hidden>Home</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'house', selected: 'house.fill' }}
-          md={{ default: 'home', selected: 'home_filled' }}
+          src={{
+            default: require('../../assets/tabs/home.png'),
+            selected: require('../../assets/tabs/home-filled.png'),
+          }}
+          renderingMode="template"
         />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="folders" accessibilityLabel="Folders">
         <NativeTabs.Trigger.Label hidden>Folders</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'folder', selected: 'folder.fill' }}
-          md={{ default: 'folder', selected: 'folder_open' }}
+          src={{
+            default: require('../../assets/tabs/folder.png'),
+            selected: require('../../assets/tabs/folder-open.png'),
+          }}
+          renderingMode="template"
         />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="music" accessibilityLabel="Music">
         <NativeTabs.Trigger.Label hidden>Music</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'music.note', selected: 'music.note.list' }}
-          md={{ default: 'music_note', selected: 'library_music' }}
+          src={{
+            default: require('../../assets/tabs/music.png'),
+            selected: require('../../assets/tabs/music-filled.png'),
+          }}
+          renderingMode="template"
         />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="videos" accessibilityLabel="Videos">
         <NativeTabs.Trigger.Label hidden>Videos</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'video', selected: 'video.fill' }}
-          md={{ default: 'videocam', selected: 'video_library' }}
+          src={{
+            default: require('../../assets/tabs/videocam.png'),
+            selected: require('../../assets/tabs/videocam-filled.png'),
+          }}
+          renderingMode="template"
         />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="user" accessibilityLabel="Profile">
         <NativeTabs.Trigger.Label hidden>Profile</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'person', selected: 'person.fill' }}
-          md={{ default: 'person_outline', selected: 'person' }}
+          src={{
+            default: require('../../assets/tabs/person.png'),
+            selected: require('../../assets/tabs/person-filled.png'),
+          }}
+          renderingMode="template"
         />
       </NativeTabs.Trigger>
     </NativeTabs>

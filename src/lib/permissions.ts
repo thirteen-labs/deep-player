@@ -3,6 +3,8 @@ import * as MediaLibrary from 'expo-media-library';
 import * as Notifications from 'expo-notifications';
 import { Linking, Platform } from 'react-native';
 
+import { initializeNotifications, isNotificationSupported } from '@/lib/notifications';
+
 export type PermissionState = 'undetermined' | 'granted' | 'denied' | 'limited' | 'unavailable';
 
 export type AppPermission = {
@@ -87,6 +89,63 @@ export async function requestNotificationPermission(): Promise<PermissionState> 
   } catch {
     return 'unavailable';
   }
+}
+
+export type AutoPermissionResult = {
+  mediaLibrary: PermissionState;
+  notifications: PermissionState;
+};
+
+let pendingAutoRequest: Promise<AutoPermissionResult> | null = null;
+
+function canPrompt(status: { granted: boolean; canAskAgain: boolean } | null): boolean {
+  return !!status && !status.granted && status.canAskAgain;
+}
+
+/**
+ * Requests permissions that the app needs but has not received yet. Media
+ * library is requested first because it is required for scanning; notifications
+ * follow once their Android channel is configured. System prompts are skipped
+ * when the user has permanently denied access.
+ */
+export function requestMissingPermissions(): Promise<AutoPermissionResult> {
+  if (pendingAutoRequest) return pendingAutoRequest;
+
+  pendingAutoRequest = (async () => {
+    const result: AutoPermissionResult = {
+      mediaLibrary: 'unavailable',
+      notifications: 'unavailable',
+    };
+
+    if (Platform.OS === 'web') return result;
+
+    try {
+      const status = await MediaLibrary.getPermissionsAsync();
+      result.mediaLibrary = canPrompt(status)
+        ? await requestMediaLibraryPermission()
+        : normalizeMedia(status);
+    } catch {
+      result.mediaLibrary = 'unavailable';
+    }
+
+    if (!isNotificationSupported()) return result;
+
+    try {
+      await initializeNotifications();
+      const status = await Notifications.getPermissionsAsync();
+      result.notifications = canPrompt(status)
+        ? await requestNotificationPermission()
+        : normalizeNotifications(status);
+    } catch {
+      result.notifications = 'unavailable';
+    }
+
+    return result;
+  })().finally(() => {
+    pendingAutoRequest = null;
+  });
+
+  return pendingAutoRequest;
 }
 
 export async function pickMediaFiles(): Promise<DocumentPicker.DocumentPickerAsset[]> {

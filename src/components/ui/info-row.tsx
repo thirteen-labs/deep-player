@@ -1,4 +1,4 @@
-import type { LucideIcon } from 'lucide-react-native';
+import type { AppIcon } from './themed-icon';
 import type { ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -12,7 +12,7 @@ type InfoRowProps = {
   label: string;
   value?: ReactNode;
   subtitle?: string;
-  icon?: LucideIcon;
+  icon?: AppIcon;
   onPress?: () => void;
   valueColor?: 'text' | 'textSecondary' | 'tint' | 'accent';
   style?: StyleProp<ViewStyle>;

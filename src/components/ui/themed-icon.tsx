@@ -1,27 +1,30 @@
-import type { LucideIcon } from 'lucide-react-native';
-import type { StyleProp, ViewStyle } from 'react-native';
+import type { ComponentType } from 'react';
+import type { SvgProps } from 'react-native-svg';
 
 import { THEME_COLOR_KEYS, type ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
+/** Any Iconoir icon component, which renders through react-native-svg. */
+export type AppIcon = ComponentType<SvgProps>;
+
 type ThemedIconProps = {
-  icon: LucideIcon;
+  icon: AppIcon;
   size?: number;
   /** A palette key (e.g. "tint") or any explicit color string. */
   color?: ThemeColor | string;
   /** SVG fill. Use a palette key or 'none' for outline-only icons. */
   fill?: ThemeColor | string;
   strokeWidth?: number;
-  style?: StyleProp<ViewStyle>;
+  style?: SvgProps['style'];
 };
 
-/** Lucide icon that follows the active theme palette. */
+/** Iconoir icon that follows the active theme palette. */
 export function ThemedIcon({
   icon: Icon,
   size = 20,
   color,
   fill,
-  strokeWidth = 2,
+  strokeWidth = 1.75,
   style,
 }: ThemedIconProps) {
   const theme = useTheme();
@@ -40,5 +43,14 @@ export function ThemedIcon({
         ? theme[fill as ThemeColor]
         : fill;
 
-  return <Icon size={size} color={resolved} fill={resolvedFill} strokeWidth={strokeWidth} style={style} />;
+  return (
+    <Icon
+      width={size}
+      height={size}
+      color={resolved}
+      fill={resolvedFill}
+      strokeWidth={strokeWidth}
+      style={style}
+    />
+  );
 }

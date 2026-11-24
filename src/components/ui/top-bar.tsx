@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ArrowDownUp, Bell, Search, Sparkles, UserRound } from 'lucide-react-native';
+import { Sort, Bell, Search, Sparks, User } from 'iconoir-react-native';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -45,10 +45,10 @@ export function TopBar({
 
       <View style={styles.actions}>
         {showUniversalSort ? (
-          <SortMenuButton label={compact ? 'Sort' : 'Sort by'} icon={ArrowDownUp} kind="universal" />
+          <SortMenuButton label={compact ? 'Sort' : 'Sort by'} icon={Sort} kind="universal" />
         ) : null}
         {showSmartSort ? (
-          <SortMenuButton label={compact ? 'Lists' : 'Smart lists'} icon={Sparkles} kind="smart" />
+          <SortMenuButton label={compact ? 'Lists' : 'Smart lists'} icon={Sparks} kind="smart" />
         ) : null}
         {showSearch && onSearchPress ? (
           <IconButton icon={Search} accessibilityLabel="Search" size={36} iconSize={18} onPress={onSearchPress} />
@@ -64,7 +64,7 @@ export function TopBar({
         ) : null}
         {showProfile ? (
           <IconButton
-            icon={UserRound}
+            icon={User}
             accessibilityLabel="Profile"
             size={36}
             iconSize={18}

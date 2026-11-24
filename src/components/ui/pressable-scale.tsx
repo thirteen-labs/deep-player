@@ -17,9 +17,12 @@ export function PressableScale({
   return (
     <Pressable
       {...rest}
-      style={({ pressed }) => {
-        const resolved = typeof style === 'function' ? style({ pressed }) : style;
-        return [resolved, pressed && { opacity: feedbackOpacity, transform: [{ scale }] }];
+      style={(state) => {
+        const resolved = typeof style === 'function' ? style(state) : style;
+        return [
+          resolved,
+          state.pressed && { opacity: feedbackOpacity, transform: [{ scale }] },
+        ];
       }}
     />
   );

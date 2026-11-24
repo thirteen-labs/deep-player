@@ -6,28 +6,27 @@ import { ThemePreference, useResolvedTheme } from '@/hooks/use-theme-store';
 import { GlassView } from '@/components/ui/glass-view';
 import { ThemedText } from '@/components/themed-text';
 
-const OPTIONS: { key: ThemePreference; label: string; color: string }[] = [
-  { key: 'system', label: 'System', color: '#7B8794' },
-  ...THEME_NAMES.map((name) => ({
-    key: name as ThemePreference,
-    label: Themes[name].label,
-    color: Themes[name].tint,
-  })),
-];
-
 export function ThemePicker() {
   const { preference, setPreference, theme } = useResolvedTheme();
+  const options: { key: ThemePreference; label: string; color: string }[] = [
+    { key: 'system', label: 'System', color: theme.textSecondary },
+    ...THEME_NAMES.map((name) => ({
+      key: name as ThemePreference,
+      label: Themes[name].label,
+      color: Themes[name].tint,
+    })),
+  ];
 
   return (
     <GlassView style={styles.container}>
       <ThemedText type="smallBold" style={styles.title}>
-        Theme
+        Themes
       </ThemedText>
       <ThemedText type="small" themeColor="textSecondary" style={styles.subtitle}>
         Pick a look for your player
       </ThemedText>
       <View style={styles.grid}>
-        {OPTIONS.map((opt) => {
+        {options.map((opt) => {
           const selected = preference === opt.key;
           return (
             <Pressable
@@ -44,15 +43,13 @@ export function ThemePicker() {
                   styles.swatch,
                   {
                     backgroundColor: opt.color,
-                    borderColor: selected
-                      ? theme.text
-                      : theme.isDark
-                        ? 'rgba(255,255,255,0.25)'
-                        : 'rgba(0,0,0,0.12)',
+                    borderColor: selected ? theme.text : theme.border,
                     borderWidth: selected ? 2 : 1,
                   },
                 ]}>
-                {selected ? <View style={styles.swatchDot} /> : null}
+                {selected ? (
+                  <View style={[styles.swatchDot, { backgroundColor: theme.background }]} />
+                ) : null}
               </View>
               <ThemedText
                 type="small"
@@ -106,7 +103,6 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: 'rgba(255,255,255,0.95)',
   },
   selectedLabel: {
     fontWeight: '700',

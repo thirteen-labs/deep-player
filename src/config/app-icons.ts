@@ -1,6 +1,6 @@
 import type { AlternateAppIcons } from 'expo-alternate-app-icons';
 
-export const DEFAULT_APP_ICON_SOURCE = require('@/assets/images/icon-11.png');
+export const DEFAULT_APP_ICON_SOURCE = require('@/assets/images/icon-purple.png');
 
 /**
  * Alternate app icons configured in app.json. Names must stay in sync with the
@@ -8,59 +8,44 @@ export const DEFAULT_APP_ICON_SOURCE = require('@/assets/images/icon-11.png');
  */
 export const APP_ICONS = [
   {
-    name: 'Icon2',
-    label: 'Icon 2',
-    source: require('@/assets/images/icon-2.png'),
+    name: 'IconPurple',
+    label: 'Purple',
+    source: require('@/assets/images/icon-purple.png'),
   },
   {
-    name: 'Icon3',
-    label: 'Icon 3',
-    source: require('@/assets/images/icon-3.png'),
+    name: 'IconGreen',
+    label: 'Green',
+    source: require('@/assets/images/icon-green.png'),
   },
   {
-    name: 'Icon4',
-    label: 'Icon 4',
-    source: require('@/assets/images/icon-4.png'),
+    name: 'IconSunset',
+    label: 'Sunset',
+    source: require('@/assets/images/icon-sunset.png'),
   },
   {
-    name: 'Icon11',
-    label: 'Icon 11',
-    source: require('@/assets/images/icon-11.png'),
+    name: 'IconRed',
+    label: 'Red',
+    source: require('@/assets/images/icon-red.png'),
   },
   {
-    name: 'IconB',
-    label: 'Icon B',
-    source: require('@/assets/images/icon-b.png'),
+    name: 'IconBlue',
+    label: 'Blue',
+    source: require('@/assets/images/icon-blue.png'),
   },
   {
-    name: 'IconBl',
-    label: 'Icon BL',
-    source: require('@/assets/images/icon-bl.png'),
+    name: 'IconAurora',
+    label: 'Aurora',
+    source: require('@/assets/images/icon-aurora.png'),
   },
   {
-    name: 'IconBw',
-    label: 'Icon BW',
-    source: require('@/assets/images/icon-bw.png'),
+    name: 'IconBlack',
+    label: 'Black',
+    source: require('@/assets/images/icon-black.png'),
   },
   {
-    name: 'IconC',
-    label: 'Icon C',
-    source: require('@/assets/images/icon-c.png'),
-  },
-  {
-    name: 'IconL',
-    label: 'Icon L',
-    source: require('@/assets/images/icon-l.png'),
-  },
-  {
-    name: 'IconP',
-    label: 'Icon P',
-    source: require('@/assets/images/icon-p.png'),
-  },
-  {
-    name: 'IconW',
-    label: 'Icon W',
-    source: require('@/assets/images/icon-w.png'),
+    name: 'IconLime',
+    label: 'Lime',
+    source: require('@/assets/images/icon-lime.png'),
   },
 ] as const;
 

@@ -1,4 +1,4 @@
-import { Film, Folder, Music2 } from 'lucide-react-native';
+import { MediaVideo, Folder, MusicDoubleNote } from 'iconoir-react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 
 import type { Folder as LibraryFolder } from '@/lib/db/schema';
@@ -23,7 +23,7 @@ export function FolderRow({ folder, subtitle, onPress, style }: FolderRowProps) 
       subtitle={subtitle ?? (isVideo ? 'Video' : 'Music')}
       value={folder.kind === 'smartlist' ? 'Smartlist' : undefined}
       valueColor="textSecondary"
-      icon={isVideo ? Film : folder.kind === 'smartlist' ? Music2 : Folder}
+      icon={isVideo ? MediaVideo : folder.kind === 'smartlist' ? MusicDoubleNote : Folder}
       onPress={onPress}
       style={style}
     />

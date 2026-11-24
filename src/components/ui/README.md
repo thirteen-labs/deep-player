@@ -47,7 +47,7 @@ import { AppButton, EmptyState, Screen, SectionCard } from '@/components/ui';
 | `SegmentedControl` | Generic segmented selector: `<SegmentedControl options={[{value, label}]} value={...} onValueChange={...} />`. |
 | `Scrubber` | Tap-to-seek progress bar with time labels. |
 | `PressableScale` | Base pressable with scale + opacity feedback. |
-| `ThemedIcon` | Lucide icon with a palette key or explicit color. |
+| `ThemedIcon` | Iconoir icon with a palette key or explicit color. |
 | `PermissionRow` | Label + status + request button for system permissions. |
 | `NowPlayingCard` | Compact now-playing bar that opens `/player`. Reads the player store itself; no props needed. |
 | `AppBottomSheet` | Themed `@gorhom/bottom-sheet` wrapper; starts closed, control via ref (`present()`, `snapToIndex()`, `close()`). |

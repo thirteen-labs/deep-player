@@ -1,4 +1,4 @@
-import type { LucideIcon } from 'lucide-react-native';
+import type { AppIcon } from './themed-icon';
 
 import { useSortSheetStore, type SortSheetKind } from '@/stores/sort-sheet-store';
 
@@ -6,7 +6,7 @@ import { AppButton } from './app-button';
 
 type SortMenuButtonProps = {
   label: string;
-  icon: LucideIcon;
+  icon: AppIcon;
   kind: Exclude<SortSheetKind, null>;
 };
 

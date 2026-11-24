@@ -1,4 +1,4 @@
-import type { LucideIcon } from 'lucide-react-native';
+import type { AppIcon } from './themed-icon';
 import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -14,7 +14,7 @@ type AppButtonProps = {
   label: string;
   onPress?: () => void;
   variant?: AppButtonVariant;
-  icon?: LucideIcon;
+  icon?: AppIcon;
   size?: 'small' | 'medium';
   disabled?: boolean;
   fullWidth?: boolean;

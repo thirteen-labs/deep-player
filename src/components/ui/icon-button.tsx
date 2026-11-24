@@ -1,4 +1,4 @@
-import type { LucideIcon } from 'lucide-react-native';
+import type { AppIcon } from './themed-icon';
 import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
@@ -9,7 +9,7 @@ import { ThemedIcon } from './themed-icon';
 type IconButtonVariant = 'plain' | 'primary' | 'secondary';
 
 type IconButtonProps = {
-  icon: LucideIcon;
+  icon: AppIcon;
   onPress?: () => void;
   accessibilityLabel: string;
   /** Outer button size in pixels. Defaults to 44. */

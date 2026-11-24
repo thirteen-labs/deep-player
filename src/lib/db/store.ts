@@ -50,6 +50,26 @@ async function fetchRecentlyPlayed(db: Awaited<ReturnType<typeof getDb>>) {
   );
 }
 
+/** Rebuild the artist/album indexes from the current track list. */
+function deriveLibraryIndexes(tracks: Track[]) {
+  const artists = [...new Set(tracks.map((t) => t.artist || t.albumArtist).filter(Boolean))].sort();
+
+  const albumsByKey = new Map<string, AlbumRow>();
+  for (const track of tracks) {
+    if (!track.album) continue;
+    const artist = track.artist || track.albumArtist;
+    const key = `${artist}|${track.album}`;
+    if (!albumsByKey.has(key)) {
+      albumsByKey.set(key, { title: track.album, artist });
+    }
+  }
+  const albums = [...albumsByKey.values()].sort((a, b) =>
+    (a.artist + a.title).localeCompare(b.artist + b.title),
+  );
+
+  return { artists, albums };
+}
+
 type DbStore = {
   folders: Folder[];
   folderTracks: FolderTrackRow[];
@@ -138,18 +158,7 @@ export const useDbStore = create<DbStore>((set, get) => ({
       ]);
 
       // Derived artist and album indexes (used by the Artists and Albums screens).
-      const artists = [...new Set(tracks.map((t) => t.artist || t.albumArtist).filter(Boolean))].sort();
-
-      const albumsByKey = new Map<string, AlbumRow>();
-      for (const track of tracks) {
-        if (!track.album) continue;
-        const artist = track.artist || track.albumArtist;
-        const key = `${artist}|${track.album}`;
-        if (!albumsByKey.has(key)) {
-          albumsByKey.set(key, { title: track.album, artist });
-        }
-      }
-      const albums = [...albumsByKey.values()].sort((a, b) => (a.artist + a.title).localeCompare(b.artist + b.title));
+      const { artists, albums } = deriveLibraryIndexes(tracks);
 
       set({
         folders,
@@ -356,7 +365,10 @@ export const useDbStore = create<DbStore>((set, get) => ({
       next.artworkUri,
       trackId
     );
-    set((state) => ({ tracks: state.tracks.map((t) => (t.id === trackId ? next : t)) }));
+    set((state) => {
+      const tracks = state.tracks.map((t) => (t.id === trackId ? next : t));
+      return { tracks, ...deriveLibraryIndexes(tracks) };
+    });
   },
 
   deleteTrack: async (trackId) => {
@@ -373,15 +385,19 @@ export const useDbStore = create<DbStore>((set, get) => ({
       await db.runAsync('DELETE FROM folderTracks WHERE trackId = ?', id);
       await db.runAsync('DELETE FROM playbackState WHERE trackId = ?', id);
     }
-    set((state) => ({
-      tracks: state.tracks.filter((t) => !ids.has(t.id)),
-      playlistTracks: state.playlistTracks.filter((r) => !ids.has(r.trackId)),
-      folderTracks: state.folderTracks.filter((r) => !ids.has(r.trackId)),
-      recentlyPlayed: state.recentlyPlayed.filter((t) => !ids.has(t.id)),
-      playbackPositions: Object.fromEntries(
-        Object.entries(state.playbackPositions).filter(([id]) => !ids.has(id))
-      ),
-      lastPlayedAt: Object.fromEntries(Object.entries(state.lastPlayedAt).filter(([id]) => !ids.has(id))),
-    }));
+    set((state) => {
+      const tracks = state.tracks.filter((t) => !ids.has(t.id));
+      return {
+        tracks,
+        ...deriveLibraryIndexes(tracks),
+        playlistTracks: state.playlistTracks.filter((r) => !ids.has(r.trackId)),
+        folderTracks: state.folderTracks.filter((r) => !ids.has(r.trackId)),
+        recentlyPlayed: state.recentlyPlayed.filter((t) => !ids.has(t.id)),
+        playbackPositions: Object.fromEntries(
+          Object.entries(state.playbackPositions).filter(([id]) => !ids.has(id))
+        ),
+        lastPlayedAt: Object.fromEntries(Object.entries(state.lastPlayedAt).filter(([id]) => !ids.has(id))),
+      };
+    });
   },
 }));

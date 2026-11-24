@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Clock3, Film, Folder, Headphones, ListMusic, Music2, Play } from 'lucide-react-native';
+import { Clock, MediaVideo, Folder, Headset, Playlist, MusicDoubleNote, Play } from 'iconoir-react-native';
 import { useEffect, useMemo } from 'react';
 import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 
@@ -21,6 +21,7 @@ import { useDbStore } from '@/lib/db/store';
 import { usePlayerStore } from '@/stores/player-store';
 import { getContinueItems } from '@/utils/continue';
 
+/** Dashboard: resume points and read-only library counts. Navigation lives in the tab bar. */
 export default function HomeScreen() {
   const theme = useTheme();
   const { width } = useWindowDimensions();
@@ -90,7 +91,7 @@ export default function HomeScreen() {
         action={
           <AppButton
             label={compact ? 'Videos' : 'All videos'}
-            icon={Film}
+            icon={MediaVideo}
             variant="ghost"
             size="small"
             onPress={() => router.push('/videos')}
@@ -109,7 +110,7 @@ export default function HomeScreen() {
           </ScrollView>
         ) : (
           <EmptyState
-            icon={Film}
+            icon={MediaVideo}
             message="Nothing to resume yet"
             description={isLoaded ? 'Start a video and it will appear here.' : 'Loading your library…'}
           />
@@ -122,7 +123,7 @@ export default function HomeScreen() {
         action={
           <AppButton
             label={compact ? 'Music' : 'All music'}
-            icon={Music2}
+            icon={MusicDoubleNote}
             variant="ghost"
             size="small"
             onPress={() => router.push('/music')}
@@ -136,7 +137,7 @@ export default function HomeScreen() {
           </ScrollView>
         ) : (
           <EmptyState
-            icon={Headphones}
+            icon={Headset}
             message="No tracks in progress"
             description={isLoaded ? 'Play a song to start your queue here.' : 'Loading your library…'}
           />
@@ -144,19 +145,11 @@ export default function HomeScreen() {
       </SectionCard>
 
       <SectionCard title="Library at a glance" gap={Spacing.one}>
-        <InfoRow label="Music tracks" value={musicCount} icon={Music2} onPress={() => router.push('/music')} />
-        <InfoRow label="Videos" value={videoCount} icon={Film} onPress={() => router.push('/videos')} />
-        <InfoRow label="Folders" value={folders.length} icon={Folder} onPress={() => router.push('/folders')} />
-        {seriesCount > 0 ? (
-          <InfoRow label="Video series" value={seriesCount} icon={Clock3} onPress={() => router.push('/folders')} />
-        ) : null}
-        <InfoRow label="Playlists" value={playlists.length} icon={ListMusic} onPress={() => router.push('/folders')} />
-      </SectionCard>
-
-      <SectionCard title="Quick actions" gap={Spacing.two}>
-        <AppButton label="Open music library" icon={Music2} variant="primary" onPress={() => router.push('/music')} />
-        <AppButton label="Browse folders" icon={Folder} variant="secondary" onPress={() => router.push('/folders')} />
-        <AppButton label="Watch videos" icon={Film} variant="secondary" onPress={() => router.push('/videos')} />
+        <InfoRow label="Music tracks" value={musicCount} icon={MusicDoubleNote} />
+        <InfoRow label="Videos" value={videoCount} icon={MediaVideo} />
+        <InfoRow label="Folders" value={folders.length} icon={Folder} />
+        {seriesCount > 0 ? <InfoRow label="Video series" value={seriesCount} icon={Clock} /> : null}
+        <InfoRow label="Playlists" value={playlists.length} icon={Playlist} />
       </SectionCard>
     </Screen>
   );

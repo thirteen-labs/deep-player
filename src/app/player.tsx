@@ -1,21 +1,21 @@
 import {
-  ChevronDown,
-  ChevronUp,
+  NavArrowDown,
+  NavArrowUp,
   Heart,
-  ListMusic,
-  Music2,
+  Playlist,
+  MusicDoubleNote,
   Pause,
   Play,
   Repeat,
-  Repeat1,
+  RepeatOnce,
   Shuffle,
-  SkipBack,
-  SkipForward,
-  Trash2,
-  Volume2,
-  VolumeX,
-  X,
-} from 'lucide-react-native';
+  SkipPrev,
+  SkipNext,
+  Trash,
+  SoundHigh,
+  SoundOff,
+  Xmark,
+} from 'iconoir-react-native';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
@@ -39,6 +39,7 @@ import { useMediaShortcuts } from '@/hooks/use-media-shortcuts';
 import { useTheme } from '@/hooks/use-theme';
 import { useDbStore } from '@/lib/db/store';
 import { PLAYBACK_SPEEDS, usePlayerStore } from '@/stores/player-store';
+import { withAlpha } from '@/utils/color';
 
 /** Full-screen audio player: artwork, transport, queue and player options. */
 export default function AudioPlayerScreen() {
@@ -93,7 +94,7 @@ export default function AudioPlayerScreen() {
 
   const artworkSize = Math.min(340, Math.max(220, width - Spacing.four * 3));
   const playerTheme = artworkPalette ?? theme;
-  const RepeatIcon = repeatMode === 'one' ? Repeat1 : Repeat;
+  const RepeatIcon = repeatMode === 'one' ? RepeatOnce : Repeat;
 
   if (!track) {
     return (
@@ -104,11 +105,11 @@ export default function AudioPlayerScreen() {
             contentContainerStyle={styles.empty}
           >
             <EmptyState
-              icon={Music2}
+              icon={MusicDoubleNote}
               message="Nothing playing"
               description="Open the music library to pick a track and it will show up here."
             />
-            <AppButton label="Browse music" icon={Music2} onPress={() => router.push('/music')} />
+            <AppButton label="Browse music" icon={MusicDoubleNote} onPress={() => router.push('/music')} />
           </ScrollView>
         </ScreenBackground>
       </ThemeOverrideProvider>
@@ -124,7 +125,7 @@ export default function AudioPlayerScreen() {
         >
           <View style={styles.header}>
             <IconButton
-              icon={ChevronDown}
+              icon={NavArrowDown}
               accessibilityLabel="Close player"
               onPress={() => router.back()}
             />
@@ -137,7 +138,7 @@ export default function AudioPlayerScreen() {
               </ThemedText>
             </View>
             <IconButton
-              icon={ListMusic}
+              icon={Playlist}
               accessibilityLabel={showQueue ? 'Hide queue' : 'Show queue'}
               active={showQueue}
               onPress={() => setShowQueue((visible) => !visible)}
@@ -149,7 +150,10 @@ export default function AudioPlayerScreen() {
               uri={track.artworkUri}
               size={artworkSize}
               radius={28}
-              style={styles.artwork}
+              style={[
+                styles.artwork,
+                { boxShadow: `0 18px 45px ${withAlpha(playerTheme.text, 0.22)}` },
+              ]}
             />
             <View style={styles.trackInfo}>
               <View style={styles.trackCopy}>
@@ -179,7 +183,7 @@ export default function AudioPlayerScreen() {
               onPress={toggleShuffle}
             />
             <IconButton
-              icon={SkipBack}
+              icon={SkipPrev}
               accessibilityLabel="Previous track"
               size={54}
               iconSize={26}
@@ -194,7 +198,7 @@ export default function AudioPlayerScreen() {
               onPress={togglePlay}
             />
             <IconButton
-              icon={SkipForward}
+              icon={SkipNext}
               accessibilityLabel="Next track"
               size={54}
               iconSize={26}
@@ -227,7 +231,7 @@ export default function AudioPlayerScreen() {
 
           <View style={styles.settingRow}>
             <IconButton
-              icon={isMuted || volume === 0 ? VolumeX : Volume2}
+              icon={isMuted || volume === 0 ? SoundOff : SoundHigh}
               accessibilityLabel={isMuted ? 'Unmute' : 'Mute'}
               size={36}
               iconSize={18}
@@ -240,11 +244,18 @@ export default function AudioPlayerScreen() {
           </View>
 
           {showQueue ? (
-            <View style={styles.queue}>
+            <View
+              style={[
+                styles.queue,
+                {
+                  backgroundColor: playerTheme.backgroundElement,
+                  borderColor: playerTheme.border,
+                },
+              ]}>
               <View style={styles.queueHeader}>
                 <ThemedText type="smallBold">Queue ({queue.length})</ThemedText>
                 <IconButton
-                  icon={X}
+                  icon={Xmark}
                   accessibilityLabel="Hide queue"
                   size={32}
                   iconSize={16}
@@ -281,7 +292,7 @@ export default function AudioPlayerScreen() {
                       </View>
                     </PressableScale>
                     <IconButton
-                      icon={ChevronUp}
+                      icon={NavArrowUp}
                       accessibilityLabel="Move up"
                       size={30}
                       iconSize={15}
@@ -290,7 +301,7 @@ export default function AudioPlayerScreen() {
                       onPress={() => moveQueueItem(index, index - 1)}
                     />
                     <IconButton
-                      icon={ChevronDown}
+                      icon={NavArrowDown}
                       accessibilityLabel="Move down"
                       size={30}
                       iconSize={15}
@@ -299,7 +310,7 @@ export default function AudioPlayerScreen() {
                       onPress={() => moveQueueItem(index, index + 1)}
                     />
                     <IconButton
-                      icon={Trash2}
+                      icon={Trash}
                       accessibilityLabel="Remove from queue"
                       size={30}
                       iconSize={15}
@@ -358,9 +369,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.four,
   },
-  artwork: {
-    boxShadow: '0 18px 45px rgba(0,0,0,0.28)',
-  },
+  artwork: {},
   trackInfo: {
     width: '100%',
     flexDirection: 'row',
@@ -396,7 +405,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderCurve: 'continuous',
     borderWidth: 1,
-    borderColor: 'rgba(128,128,128,0.18)',
   },
   queueHeader: {
     flexDirection: 'row',

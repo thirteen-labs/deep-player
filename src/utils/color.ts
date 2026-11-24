@@ -117,6 +117,27 @@ export function rgba(color: string, alpha: number, fallback = '#000000'): string
   return `rgba(${r}, ${g}, ${b}, ${clamp(alpha, 0, 1)})`;
 }
 
+/** Applies an alpha channel to a hex, rgb, or rgba color string. */
+export function withAlpha(color: string, alpha: number, fallback = '#000000'): string {
+  const value = color.trim();
+  const hex = value.replace(/^#/, '');
+  if (/^(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(hex)) {
+    const normalized = hex.length === 8 ? hex.slice(0, 6) : hex;
+    const [r, g, b] = hexToRgb(normalizeColor(normalized, fallback));
+    return `rgba(${r}, ${g}, ${b}, ${clamp(alpha, 0, 1)})`;
+  }
+
+  const match = value.match(/^rgba?\(([^)]+)\)$/i);
+  if (match) {
+    const parts = match[1].split(',').map((part) => parseFloat(part));
+    if (parts.length >= 3 && parts.slice(0, 3).every((part) => Number.isFinite(part))) {
+      return `rgba(${parts[0]}, ${parts[1]}, ${parts[2]}, ${clamp(alpha, 0, 1)})`;
+    }
+  }
+
+  return rgba(fallback, alpha);
+}
+
 /** Picks the most useful swatch from the platform-specific color result. */
 export function pickSourceColor(result: ImageColorsResult | null, fallback: string): string {
   if (!result) return fallback;
@@ -181,7 +202,7 @@ export function buildArtworkPalette(
     border: rgba(source, 0.22, base.border),
     glassBackground: base.isDark
       ? rgba(backgroundElement, 0.6, base.glassBackground)
-      : 'rgba(255,255,255,0.62)',
+      : rgba(base.background, 0.62, base.glassBackground),
     glassBorder: base.isDark
       ? rgba(text, 0.14, base.glassBorder)
       : rgba(source, 0.18, base.glassBorder),

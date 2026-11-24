@@ -1,4 +1,4 @@
-import { Check, Heart, Music2 as MusicIcon, Pencil, Plus, SkipForward } from 'lucide-react-native';
+import { Check, Heart, MusicDoubleNote as MusicIcon, Edit, Plus, SkipNext } from 'iconoir-react-native';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -9,6 +9,7 @@ import type { Track } from '@/lib/db/schema';
 import { IconButton } from './icon-button';
 import { MediaArtwork } from './media-artwork';
 import { PressableScale } from './pressable-scale';
+import { ThemedIcon } from './themed-icon';
 
 type TrackRowProps = {
   track: Track;
@@ -68,7 +69,7 @@ export function TrackRow({
                 backgroundColor: selected ? theme.tint : 'transparent',
               },
             ]}>
-            {selected ? <Check size={14} color={theme.isDark ? '#0B0D10' : '#FFFFFF'} /> : null}
+            {selected ? <ThemedIcon icon={Check} size={14} color={theme.background} /> : null}
           </View>
         ) : (
           <MediaArtwork uri={track.artworkUri} size={44} radius={Spacing.two} fallbackIcon={MusicIcon} />
@@ -85,7 +86,7 @@ export function TrackRow({
       </PressableScale>
       {!selectionMode && onPlayNextPress ? (
         <IconButton
-          icon={SkipForward}
+          icon={SkipNext}
           accessibilityLabel="Play next"
           size={36}
           iconSize={18}
@@ -105,7 +106,7 @@ export function TrackRow({
       ) : null}
       {!selectionMode && onEditPress ? (
         <IconButton
-          icon={Pencil}
+          icon={Edit}
           accessibilityLabel="Edit track"
           size={36}
           iconSize={18}

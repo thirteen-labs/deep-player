@@ -1,5 +1,7 @@
 import Constants from 'expo-constants';
+import { Search } from 'iconoir-react-native';
 import { useEffect, useState } from 'react';
+import { Alert } from 'react-native';
 
 import { AppIconPicker } from '@/components/app-icon-picker';
 import { ThemePicker } from '@/components/theme-picker';
@@ -7,6 +9,7 @@ import { AppButton, InfoRow, PermissionRow, Screen, SectionCard, TopBar } from '
 import { Spacing } from '@/constants/theme';
 import { env } from '@/config/env';
 import { useDbStore } from '@/lib/db/store';
+import { scanLibrary, scanVideos } from '@/lib/library/scan';
 import { isNotificationSupported } from '@/lib/notifications';
 import {
   getMediaLibraryPermission,
@@ -24,6 +27,7 @@ export default function UserScreen() {
   const [mediaPermission, setMediaPermission] = useState<PermissionState>('undetermined');
   const [notificationPermission, setNotificationPermission] = useState<PermissionState>('undetermined');
   const [pickedFilesCount, setPickedFilesCount] = useState<number | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -32,6 +36,21 @@ export default function UserScreen() {
       setNotificationPermission(notif);
     })();
   }, []);
+
+  const handleScan = async () => {
+    setIsScanning(true);
+    try {
+      await scanLibrary();
+      await scanVideos();
+      await load();
+      Alert.alert('Library updated', 'Music and videos have been rescanned.');
+    } catch (error) {
+      console.warn('Media library scan failed', error);
+      Alert.alert('Scan failed', 'Unable to scan your media library.');
+    } finally {
+      setIsScanning(false);
+    }
+  };
 
   const handleMediaRequest = async () => {
     setMediaPermission(await requestMediaLibraryPermission());
@@ -47,16 +66,22 @@ export default function UserScreen() {
   };
 
   return (
-    <Screen header={<TopBar title="User" />}>
-      <SectionCard title="Profile" gap={Spacing.two}>
-        <InfoRow label="Name" value="Deep Player" />
-        <InfoRow label="App version" value={Constants.expoConfig?.version ?? '—'} valueColor="textSecondary" />
-        <InfoRow label="Environment" value={env.appEnv} valueColor="textSecondary" />
-      </SectionCard>
-
+    <Screen header={<TopBar title="Settings" showProfile={false} />}>
       <ThemePicker />
 
       <AppIconPicker />
+
+      <SectionCard title="Library">
+        <AppButton
+          label={isScanning ? 'Scanning…' : 'Scan media library'}
+          icon={Search}
+          variant="ghost"
+          size="small"
+          disabled={isScanning}
+          onPress={() => void handleScan()}
+        />
+        <AppButton label="Refresh library" variant="ghost" size="small" onPress={() => void load()} />
+      </SectionCard>
 
       <SectionCard title="Permissions">
         <PermissionRow label="Media library" status={mediaPermission} onRequest={handleMediaRequest} />
@@ -77,8 +102,10 @@ export default function UserScreen() {
         <AppButton label="Open system settings" variant="ghost" size="small" onPress={() => void openAppSettings()} />
       </SectionCard>
 
-      <SectionCard title="Library">
-        <AppButton label="Refresh library" variant="ghost" size="small" onPress={() => void load()} />
+      <SectionCard title="About" gap={Spacing.two}>
+        <InfoRow label="Name" value="Deep Player" />
+        <InfoRow label="App version" value={Constants.expoConfig?.version ?? '—'} valueColor="textSecondary" />
+        <InfoRow label="Environment" value={env.appEnv} valueColor="textSecondary" />
       </SectionCard>
     </Screen>
   );

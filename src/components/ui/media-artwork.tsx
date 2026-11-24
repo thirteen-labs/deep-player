@@ -1,17 +1,17 @@
 import { Image } from 'expo-image';
-import { Music2 as MusicIcon, type LucideIcon } from 'lucide-react-native';
+import { MusicDoubleNote as MusicIcon } from 'iconoir-react-native';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ThemedView } from '@/components/themed-view';
 
-import { ThemedIcon } from './themed-icon';
+import { ThemedIcon, type AppIcon } from './themed-icon';
 
 type MediaArtworkProps = {
   uri?: string | null;
   size?: number;
   radius?: number;
   /** Shown when there is no artwork. Defaults to a music note. */
-  fallbackIcon?: LucideIcon;
+  fallbackIcon?: AppIcon;
   style?: StyleProp<ViewStyle>;
 };
 

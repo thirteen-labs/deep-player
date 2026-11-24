@@ -4,19 +4,19 @@
     "slug": "deep-player",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon-11.png",
+    "icon": "./assets/images/icon-purple.png",
     "scheme": "deepplayer",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/images/icon-purple.png"
     },
     "android": {
       "package": "com.deep.player",
       "adaptiveIcon": {
-        "backgroundColor": "#202020",
-        "foregroundImage": "./assets/images/icon-11.png",
-        "backgroundImage": "./assets/images/icon-11.png",
-        "monochromeImage": "./assets/images/icon-11.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/images/icon-purple.png",
+        "backgroundImage": "./assets/images/icon-purple.png",
+        "monochromeImage": "./assets/images/icon-purple.png"
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
@@ -33,7 +33,7 @@
     },
     "web": {
       "output": "server",
-      "favicon": "./assets/images/icon-3.png"
+      "favicon": "./assets/images/icon-purple.png"
     },
     "plugins": [
       [
@@ -83,91 +83,67 @@
         "expo-alternate-app-icons",
         [
           {
-            "name": "Icon2",
-            "ios": "./assets/images/icon-2.png",
+            "name": "IconPurple",
+            "ios": "./assets/images/icon-purple.png",
             "android": {
-              "foregroundImage": "./assets/images/icon-2.png",
-              "backgroundColor": "#202020"
+              "foregroundImage": "./assets/images/icon-purple.png",
+              "backgroundColor": "#FFFFFF"
             }
           },
           {
-            "name": "Icon3",
-            "ios": "./assets/images/icon-3.png",
+            "name": "IconGreen",
+            "ios": "./assets/images/icon-green.png",
             "android": {
-              "foregroundImage": "./assets/images/icon-3.png",
-              "backgroundColor": "#202020"
+              "foregroundImage": "./assets/images/icon-green.png",
+              "backgroundColor": "#FFFFFF"
             }
           },
           {
-            "name": "Icon4",
-            "ios": "./assets/images/icon-4.png",
+            "name": "IconSunset",
+            "ios": "./assets/images/icon-sunset.png",
             "android": {
-              "foregroundImage": "./assets/images/icon-4.png",
-              "backgroundColor": "#202020"
+              "foregroundImage": "./assets/images/icon-sunset.png",
+              "backgroundColor": "#FFFFFF"
             }
           },
           {
-            "name": "Icon11",
-            "ios": "./assets/images/icon-11.png",
+            "name": "IconRed",
+            "ios": "./assets/images/icon-red.png",
             "android": {
-              "foregroundImage": "./assets/images/icon-11.png",
-              "backgroundColor": "#202020"
+              "foregroundImage": "./assets/images/icon-red.png",
+              "backgroundColor": "#FFFFFF"
             }
           },
           {
-            "name": "IconB",
-            "ios": "./assets/images/icon-b.png",
+            "name": "IconBlue",
+            "ios": "./assets/images/icon-blue.png",
             "android": {
-              "foregroundImage": "./assets/images/icon-b.png",
-              "backgroundColor": "#202020"
+              "foregroundImage": "./assets/images/icon-blue.png",
+              "backgroundColor": "#FFFFFF"
             }
           },
           {
-            "name": "IconBl",
-            "ios": "./assets/images/icon-bl.png",
+            "name": "IconAurora",
+            "ios": "./assets/images/icon-aurora.png",
             "android": {
-              "foregroundImage": "./assets/images/icon-bl.png",
-              "backgroundColor": "#202020"
+              "foregroundImage": "./assets/images/icon-aurora.png",
+              "backgroundColor": "#FFFFFF"
             }
           },
           {
-            "name": "IconBw",
-            "ios": "./assets/images/icon-bw.png",
+            "name": "IconBlack",
+            "ios": "./assets/images/icon-black.png",
             "android": {
-              "foregroundImage": "./assets/images/icon-bw.png",
-              "backgroundColor": "#202020"
+              "foregroundImage": "./assets/images/icon-black.png",
+              "backgroundColor": "#FFFFFF"
             }
           },
           {
-            "name": "IconC",
-            "ios": "./assets/images/icon-c.png",
+            "name": "IconLime",
+            "ios": "./assets/images/icon-lime.png",
             "android": {
-              "foregroundImage": "./assets/images/icon-c.png",
-              "backgroundColor": "#202020"
-            }
-          },
-          {
-            "name": "IconL",
-            "ios": "./assets/images/icon-l.png",
-            "android": {
-              "foregroundImage": "./assets/images/icon-l.png",
-              "backgroundColor": "#202020"
-            }
-          },
-          {
-            "name": "IconP",
-            "ios": "./assets/images/icon-p.png",
-            "android": {
-              "foregroundImage": "./assets/images/icon-p.png",
-              "backgroundColor": "#202020"
-            }
-          },
-          {
-            "name": "IconW",
-            "ios": "./assets/images/icon-w.png",
-            "android": {
-              "foregroundImage": "./assets/images/icon-w.png",
-              "backgroundColor": "#202020"
+              "foregroundImage": "./assets/images/icon-lime.png",
+              "backgroundColor": "#FFFFFF"
             }
           }
         ]

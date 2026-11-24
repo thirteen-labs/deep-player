@@ -4,6 +4,7 @@ import { PropsWithChildren } from 'react';
 import { StyleSheet, View, ViewStyle, StyleProp } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
+import { withAlpha } from '@/utils/color';
 
 type Props = PropsWithChildren<{
   style?: StyleProp<ViewStyle>;
@@ -30,8 +31,16 @@ export function ScreenBackground({ children, style, backdropBlur }: Props) {
         colors={
           theme.backgroundImage
             ? theme.isDark
-              ? ['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.35)', theme.background + 'CC']
-              : ['rgba(255,255,255,0.10)', 'rgba(255,255,255,0.25)', theme.background + 'D9']
+              ? [
+                  withAlpha(theme.background, 0.15),
+                  withAlpha(theme.background, 0.35),
+                  withAlpha(theme.background, 0.8),
+                ]
+              : [
+                  withAlpha(theme.background, 0.1),
+                  withAlpha(theme.background, 0.25),
+                  withAlpha(theme.background, 0.85),
+                ]
             : [theme.backgroundElement, theme.background]
         }
         locations={theme.backgroundImage ? [0, 0.45, 1] : [0, 0.7]}

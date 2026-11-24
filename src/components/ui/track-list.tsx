@@ -1,4 +1,4 @@
-import { Music2 } from 'lucide-react-native';
+import { MusicDoubleNote } from 'iconoir-react-native';
 import { StyleSheet, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
@@ -21,6 +21,7 @@ type TrackListProps = {
   onEditPress?: (track: Track) => void;
   isLoading?: boolean;
   emptyMessage?: string;
+  emptyDescription?: string;
 };
 
 /** Presentational list of tracks; handles loading and empty states. */
@@ -37,15 +38,16 @@ export function TrackList({
   onEditPress,
   isLoading = false,
   emptyMessage = 'No tracks in your library yet.',
+  emptyDescription = 'Scan the media library in Settings to import tracks from your device.',
 }: TrackListProps) {
   if (isLoading) return <LoadingState message="Loading tracks…" variant="block" />;
 
   if (tracks.length === 0) {
     return (
       <EmptyState
-        icon={Music2}
+        icon={MusicDoubleNote}
         message={emptyMessage}
-        description="Use Scan library to import music from your device."
+        description={emptyDescription}
       />
     );
   }

@@ -1,4 +1,4 @@
-import { AudioLines } from 'lucide-react-native';
+import { SineWave } from 'iconoir-react-native';
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -7,6 +7,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { PressableScale } from './pressable-scale';
+import { ThemedIcon } from './themed-icon';
 
 type AppLogoProps = {
   /** Hide the wordmark, e.g. on narrow screens. */
@@ -25,7 +26,7 @@ export function AppLogo({ compact = false, onPress }: AppLogoProps) {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.mark}>
-        <AudioLines size={18} color={theme.background} strokeWidth={2.4} />
+        <ThemedIcon icon={SineWave} size={18} color={theme.background} strokeWidth={2.4} />
       </LinearGradient>
       {!compact ? (
         <ThemedText type="smallBold" style={styles.wordmark}>

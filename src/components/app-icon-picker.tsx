@@ -1,15 +1,17 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { Check } from 'lucide-react-native';
+import { Check } from 'iconoir-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { GlassView } from '@/components/ui/glass-view';
+import { ThemedIcon } from '@/components/ui/themed-icon';
 import { APP_ICONS, DEFAULT_APP_ICON_SOURCE, type AppIconName } from '@/config/app-icons';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getActiveAppIcon, resetToDefaultAppIcon, setActiveAppIcon, supportsAlternateIcons } from '@/lib/app-icon';
+import { withAlpha } from '@/utils/color';
 
 const OPTIONS = [{ name: null, label: 'Default', source: DEFAULT_APP_ICON_SOURCE }, ...APP_ICONS] as const;
 
@@ -87,11 +89,12 @@ export function AppIconPicker() {
                 <Image source={option.source} style={styles.image} contentFit="cover" cachePolicy="memory-disk" />
                 {selected ? (
                   <View style={[styles.checkBadge, { backgroundColor: theme.tint }]}>
-                    <Check size={12} color={theme.background} strokeWidth={3} />
+                    <ThemedIcon icon={Check} size={12} color={theme.background} strokeWidth={3} />
                   </View>
                 ) : null}
                 {busy ? (
-                  <View style={styles.busyOverlay}>
+                  <View
+                    style={[styles.busyOverlay, { backgroundColor: withAlpha(theme.background, 0.55) }]}>
                     <ActivityIndicator size="small" color={theme.tint} />
                   </View>
                 ) : null}
@@ -174,7 +177,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 10,
-    backgroundColor: 'rgba(0,0,0,0.35)',
   },
   label: {
     width: '100%',

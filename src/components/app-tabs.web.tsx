@@ -6,22 +6,22 @@ import {
   TabTriggerSlotProps,
   TabListProps,
 } from 'expo-router/ui';
-import { Film, Folder, House, Music2, UserRound, type LucideIcon } from 'lucide-react-native';
+import { MediaVideo, Folder, Home, MusicDoubleNote, User } from 'iconoir-react-native';
 import { type Ref } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassView } from '@/components/ui/glass-view';
-import { ThemedIcon } from '@/components/ui/themed-icon';
+import { ThemedIcon, type AppIcon } from '@/components/ui/themed-icon';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 const TABS = [
-  { name: 'home', href: '/home', label: 'Home', icon: House },
+  { name: 'home', href: '/home', label: 'Home', icon: Home },
   { name: 'folders', href: '/folders', label: 'Folders', icon: Folder },
-  { name: 'music', href: '/music', label: 'Music', icon: Music2 },
-  { name: 'videos', href: '/videos', label: 'Videos', icon: Film },
-  { name: 'user', href: '/user', label: 'Profile', icon: UserRound },
+  { name: 'music', href: '/music', label: 'Music', icon: MusicDoubleNote },
+  { name: 'videos', href: '/videos', label: 'Videos', icon: MediaVideo },
+  { name: 'user', href: '/user', label: 'Profile', icon: User },
 ] as const;
 
 export default function AppTabs() {
@@ -41,7 +41,7 @@ export default function AppTabs() {
   );
 }
 
-type TabButtonProps = TabTriggerSlotProps & { label: string; icon: LucideIcon };
+type TabButtonProps = TabTriggerSlotProps & { label: string; icon: AppIcon };
 
 export function TabButton({ label, icon: Icon, isFocused, ref, ...props }: TabButtonProps) {
   const theme = useTheme();

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getColors, type ImageColorsResult } from 'react-native-image-colors';
+import type { ImageColorsResult } from 'react-native-image-colors';
 
 import type { ThemePalette } from '@/constants/theme';
 import { useResolvedTheme } from '@/hooks/use-theme-store';
+import { extractImageColors } from '@/lib/image-colors';
 import { buildArtworkPalette, pickSourceColor } from '@/utils/color';
 
 type ColorState = {
@@ -25,18 +26,15 @@ export function useArtworkPalette(uri?: string | null): ThemePalette | null {
     let cancelled = false;
     if (!uri) return;
 
-    void getColors(uri, {
+    void extractImageColors(uri, {
       fallback: baseTheme.tint,
       cache: true,
       key: uri,
       quality: 'low',
-    })
-      .then((colors) => {
-        if (!cancelled) setState({ uri, colors });
-      })
-      .catch(() => {
-        // The palette falls back to the app tint when extraction fails.
-      });
+    }).then((colors) => {
+      // `null` keeps the resolved app theme as the palette fallback.
+      if (!cancelled && colors) setState({ uri, colors });
+    });
 
     return () => {
       cancelled = true;

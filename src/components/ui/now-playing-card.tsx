@@ -1,4 +1,4 @@
-import { ChevronUp, Music2, Pause, Play, SkipForward } from 'lucide-react-native';
+import { NavArrowUp, MusicDoubleNote, Pause, Play, SkipNext } from 'iconoir-react-native';
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
@@ -14,6 +14,7 @@ import { GlassView } from './glass-view';
 import { IconButton } from './icon-button';
 import { MediaArtwork } from './media-artwork';
 import { PressableScale } from './pressable-scale';
+import { ThemedIcon } from './themed-icon';
 
 /**
  * Compact now-playing bar. The full transport lives in `/player` so browsing
@@ -35,7 +36,7 @@ export function NowPlayingCard() {
       <ThemeOverrideProvider theme={cardTheme}>
         <GlassView style={styles.card}>
           <EmptyState
-            icon={Music2}
+            icon={MusicDoubleNote}
             message="Nothing playing"
             description="Select a track from the library to start playing."
           />
@@ -65,7 +66,7 @@ export function NowPlayingCard() {
                 {track.artist || 'Unknown artist'}
               </ThemedText>
             </View>
-            <ChevronUp size={18} color={cardTheme.textSecondary} />
+            <ThemedIcon icon={NavArrowUp} size={18} color={cardTheme.textSecondary} />
           </PressableScale>
           <IconButton
             icon={isPlaying ? Pause : Play}
@@ -76,7 +77,7 @@ export function NowPlayingCard() {
             onPress={togglePlay}
           />
           <IconButton
-            icon={SkipForward}
+            icon={SkipNext}
             accessibilityLabel="Next track"
             size={40}
             iconSize={18}

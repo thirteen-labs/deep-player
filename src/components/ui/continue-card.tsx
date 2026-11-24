@@ -1,4 +1,4 @@
-import { Film, Music2, Play } from 'lucide-react-native';
+import { MediaVideo, MusicDoubleNote, Play } from 'iconoir-react-native';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -36,7 +36,7 @@ export function ContinueCard({ item, mediaType, onPress }: ContinueCardProps) {
             uri={item.track.artworkUri}
             size={144}
             radius={14}
-            fallbackIcon={isVideo ? Film : Music2}
+            fallbackIcon={isVideo ? MediaVideo : MusicDoubleNote}
           />
           <View style={[styles.playBadge, { backgroundColor: theme.tint }]}>
             <ThemedIcon icon={Play} size={13} color="background" strokeWidth={2.5} />

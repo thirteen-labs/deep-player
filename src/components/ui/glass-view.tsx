@@ -35,7 +35,6 @@ export function GlassView({ children, style, intensity = 55, interactive = false
             backgroundColor: theme.glassBackground,
             borderColor: theme.glassBorder,
             borderWidth: 1,
-            // @ts-expect-error web-only backdrop filter
             backdropFilter: 'blur(16px)',
           },
           style,

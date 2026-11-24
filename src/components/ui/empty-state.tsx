@@ -1,4 +1,4 @@
-import type { LucideIcon } from 'lucide-react-native';
+import type { AppIcon } from './themed-icon';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -10,7 +10,7 @@ import { ThemedIcon } from './themed-icon';
 type EmptyStateProps = {
   message: string;
   description?: string;
-  icon?: LucideIcon;
+  icon?: AppIcon;
   action?: ReactNode;
 };
 
