@@ -24,4 +24,5 @@ export * from './themed-icon';
 export * from './toggle-chip';
 export * from './top-bar';
 export * from './track-list';
+export * from './volume-slider';
 export * from './track-row';

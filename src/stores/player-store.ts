@@ -9,6 +9,9 @@ import type { Track } from '@/lib/db/schema';
 export type RepeatMode = 'off' | 'one' | 'all';
 export type ShuffleMode = 'off' | 'on';
 
+/** Playback rates offered by both player UIs (Android caps expo-audio at 2x). */
+export const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
+
 let lastTrackId: string | null = null;
 
 /** Only write progress to SQLite every few seconds (plus explicit stop/switch events). */
@@ -37,6 +40,16 @@ function clearPersistedProgress(trackId: string | null | undefined) {
   void useDbStore.getState().setPlaybackPosition(trackId, 0);
 }
 
+/** Fisher-Yates copy so callers keep their original array untouched. */
+function shuffled<T>(items: readonly T[]): T[] {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 export type PlayerStore = {
   /** The track currently assigned to the shared player. */
   track: Track | null;
@@ -46,6 +59,7 @@ export type PlayerStore = {
   /** Duration in seconds. */
   duration: number;
   volume: number;
+  isMuted: boolean;
   speed: number;
   repeatMode: RepeatMode;
   shuffleMode: ShuffleMode;
@@ -57,14 +71,18 @@ export type PlayerStore = {
   finishSignal: number;
   setAudioPlayer: (player: AudioPlayer) => void;
   setSpeed: (rate: number) => void;
+  cycleSpeed: () => void;
   setVolume: (volume: number) => void;
+  toggleMute: () => void;
   setLockScreenMetadata: (track: Track | null) => void;
   play: (track: Track) => void;
+  playAt: (index: number) => void;
   pause: () => void;
   togglePlay: () => void;
   next: () => void;
   previous: () => void;
   seekTo: (seconds: number) => void;
+  seekBy: (seconds: number) => void;
   setQueue: (tracks: Track[], index?: number) => void;
   playNext: (track: Track) => void;
   addToQueue: (track: Track) => void;
@@ -82,6 +100,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   currentTime: 0,
   duration: 0,
   volume: 1,
+  isMuted: false,
   speed: 1,
   repeatMode: 'off',
   shuffleMode: 'off',
@@ -98,10 +117,30 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     if (player) player.playbackRate = rate;
   },
 
+  cycleSpeed: () => {
+    const { speed, setSpeed } = get();
+    const index = PLAYBACK_SPEEDS.findIndex((value) => Math.abs(value - speed) < 0.01);
+    const next = PLAYBACK_SPEEDS[(index + 1) % PLAYBACK_SPEEDS.length] ?? 1;
+    setSpeed(next);
+  },
+
   setVolume: (volume) => {
-    set({ volume });
+    const clamped = Math.min(1, Math.max(0, volume));
+    set({ volume: clamped, isMuted: clamped === 0 });
     const player = get().audioPlayer;
-    if (player) player.volume = volume;
+    if (player) {
+      player.volume = clamped;
+      player.muted = clamped === 0;
+    }
+  },
+
+  toggleMute: () => {
+    const { audioPlayer, isMuted, volume } = get();
+    const next = !isMuted;
+    set({ isMuted: next });
+    if (audioPlayer) audioPlayer.muted = next;
+    // Restoring from a zero-volume mute needs an audible level.
+    if (!next && volume === 0) get().setVolume(0.5);
   },
 
   setLockScreenMetadata: (track) => {
@@ -150,10 +189,16 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
       state.setLockScreenMetadata(state.track);
     }
 
-    // Advance to the next track when the current one finishes.
+    // Advance when a track finishes; "repeat one" replays it instead of skipping.
     if (status.didJustFinish && state.track && state.finishSignal === 0) {
-      set({ finishSignal: 1 });
-      get().next();
+      if (state.repeatMode === 'one') {
+        void state.audioPlayer?.seekTo(0);
+        state.audioPlayer?.play();
+        set({ currentTime: 0, isPlaying: true, finishSignal: 1 });
+      } else {
+        set({ finishSignal: 1 });
+        get().next();
+      }
     } else if (!status.didJustFinish && state.finishSignal !== 0) {
       set({ finishSignal: 0 });
     }
@@ -181,6 +226,14 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     }
     audioPlayer?.play();
     void useDbStore.getState().recordPlayback(track.id);
+  },
+
+  playAt: (index) => {
+    const { queue, play: playTrack } = get();
+    const target = queue[index];
+    if (!target) return;
+    set({ queueIndex: index });
+    playTrack(target);
   },
 
   pause: () => {
@@ -287,7 +340,19 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     audioPlayer?.seekTo(target);
   },
 
-  setQueue: (tracks, index = 0) => set({ queue: tracks, queueIndex: index }),
+  seekBy: (seconds) => get().seekTo(get().currentTime + seconds),
+
+  setQueue: (tracks, index = 0) => {
+    const { shuffleMode } = get();
+    if (shuffleMode !== 'on' || tracks.length < 2) {
+      set({ queue: tracks, queueIndex: index });
+      return;
+    }
+    // Keep the requested track first, shuffle everything after it.
+    const selected = tracks[index] ?? tracks[0];
+    const rest = shuffled(tracks.filter((_, i) => i !== index));
+    set({ queue: [selected, ...rest], queueIndex: 0 });
+  },
 
   playNext: (track) => {
     const { queue, queueIndex, track: current } = get();
@@ -374,7 +439,20 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
       repeatMode: state.repeatMode === 'off' ? 'one' : state.repeatMode === 'one' ? 'all' : 'off',
     })),
 
-  toggleShuffle: () => set((state) => ({ shuffleMode: state.shuffleMode === 'off' ? 'on' : 'off' })),
+  toggleShuffle: () => {
+    const { shuffleMode, queue, queueIndex, track } = get();
+    const next: ShuffleMode = shuffleMode === 'off' ? 'on' : 'off';
+    if (next === 'off') {
+      set({ shuffleMode: next });
+      return;
+    }
+    const playing = track ?? queue[queueIndex] ?? null;
+    const remaining = shuffled(
+      queue.filter((item, i) => i !== queueIndex && (!playing || item.id !== playing.id)),
+    );
+    const reordered = playing ? [playing, ...remaining] : remaining;
+    set({ shuffleMode: next, queue: reordered, queueIndex: playing ? 0 : -1 });
+  },
 }));
 
 /** The global player facade: zustand state + the shared `expo-audio` engine. */

@@ -33,7 +33,7 @@
     },
     "web": {
       "output": "server",
-      "favicon": "./assets/images/icon-3.webp"
+      "favicon": "./assets/images/icon-3.png"
     },
     "plugins": [
       [
@@ -67,7 +67,7 @@
         "expo-video",
         {
           "supportsBackgroundPlayback": true,
-          "supportsPictureInPictures": true
+          "supportsPictureInPicture": true
         }
       ],
       [

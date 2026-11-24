@@ -13,10 +13,19 @@ type ScrubberProps = {
   onSeek: (seconds: number) => void;
   /** Show current / total time labels below the track. Defaults to true. */
   showTimes?: boolean;
+  /** Use high-contrast colors for overlays on top of video. */
+  variant?: 'default' | 'overlay';
 };
 
 /** Tap-to-seek progress bar with time labels. */
-export function Scrubber({ currentTime, duration, onSeek, showTimes = true }: ScrubberProps) {
+export function Scrubber({
+  currentTime,
+  duration,
+  onSeek,
+  showTimes = true,
+  variant = 'default',
+}: ScrubberProps) {
+  const overlay = variant === 'overlay';
   const theme = useTheme();
   const [width, setWidth] = useState(0);
   const percent = duration > 0 ? Math.min(1, Math.max(0, currentTime / duration)) : 0;
@@ -37,21 +46,33 @@ export function Scrubber({ currentTime, duration, onSeek, showTimes = true }: Sc
         accessibilityValue={{ now: Math.round(currentTime), max: Math.round(duration) }}
         style={styles.track}
         onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
-        <View style={[styles.bar, { backgroundColor: theme.backgroundSelected }]}>
-          <View style={[styles.fill, { width: `${percent * 100}%`, backgroundColor: theme.tint }]} />
+        <View
+          style={[
+            styles.bar,
+            { backgroundColor: overlay ? 'rgba(255,255,255,0.28)' : theme.backgroundSelected },
+          ]}>
+          <View
+            style={[
+              styles.fill,
+              { width: `${percent * 100}%`, backgroundColor: overlay ? '#FFFFFF' : theme.tint },
+            ]}
+          />
           <View
             style={[
               styles.thumb,
-              { left: `${Math.max(0, percent * 100 - 2)}%`, backgroundColor: theme.tint },
+              {
+                left: `${Math.max(0, percent * 100 - 2)}%`,
+                backgroundColor: overlay ? '#FFFFFF' : theme.tint,
+              },
             ]}
           />
         </View>
         {showTimes ? (
           <View style={styles.times}>
-            <ThemedText type="small" themeColor="textSecondary" selectable>
+            <ThemedText type="small" themeColor="textSecondary" style={overlay && styles.overlayText} selectable>
               {formatTime(currentTime)}
             </ThemedText>
-            <ThemedText type="small" themeColor="textSecondary" selectable>
+            <ThemedText type="small" themeColor="textSecondary" style={overlay && styles.overlayText} selectable>
               {duration > 0 ? formatTime(duration) : '—'}
             </ThemedText>
           </View>
@@ -88,5 +109,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%',
     marginTop: Spacing.two,
+  },
+  overlayText: {
+    color: 'rgba(255,255,255,0.92)',
   },
 });

@@ -6,12 +6,12 @@ Deep Player is a local-first music and video player for iOS, Android, and web. I
 
 - **Library scanning** — imports audio and video from the device media library into SQLite
 - **Tabs** — Home, Folders, Music, Videos, and User (native tabs on iOS/Android, custom tab bar on web)
-- **Music playback** — shared `expo-audio` player with lock-screen controls, background playback, seek, repeat, shuffle, speed, and volume
+- **Music playback** — shared `expo-audio` engine, compact now-playing bar and full-screen player with lock-screen controls, background playback, queue, repeat, shuffle, speed, and volume
 - **Browsing** — search, artists, albums, track lists, folders, and video smartlists (FlashList-backed)
 - **Playlists** — create, rename, delete, and reorder collections; add tracks from any list
 - **Favorites and history** — favorite tracks and recently played items
 - **Queue** — play next, add to queue, and remove from queue
-- **Videos** — video library and `expo-video` player with Picture-in-Picture and background playback config
+- **Videos** — video library and immersive `expo-video` player with auto-hiding controls, ±10s seek, speed, fullscreen, Picture-in-Picture and background playback
 - **Offline playback** — downloads tracks and artwork to the app document directory and persists local URIs
 - **Theming and permissions** — theme picker, media-library and notification permission controls, file picker
 - **App icons** — runtime picker with 11 optional icons on iOS and Android
@@ -117,7 +117,7 @@ The EAS project is `@cadmus_labs/deep-player` (`bf15c266-ce64-45e4-8d43-4e3832be
 
 `.github/workflows/ci.yml` runs on pushes to `main`/`master`, pull requests, and manual dispatch. It runs lint and typecheck, then regenerates the Android project with `npx expo prebuild --platform android --clean`, runs `./gradlew :app:assembleRelease`, and uploads the resulting APK as the `deep-player-apk` artifact. This APK is debug-signed so it is installable; a production-signed release needs keystore secrets.
 
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for EAS build, submit, OTA update, backup, and Maestro instructions.
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for EAS build, submit, OTA update, backup, and Maestro instructions, and [docs/PLAYERS.md](docs/PLAYERS.md) for the audio/video player design, configuration, and keyboard shortcuts.
 
 ## Smoke tests
 
