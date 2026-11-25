@@ -57,12 +57,7 @@ export function AppIconPicker() {
 
   return (
     <GlassView style={styles.container}>
-      <ThemedText type="smallBold" style={styles.title}>
-        App icon
-      </ThemedText>
-      <ThemedText type="small" themeColor="textSecondary" style={styles.subtitle}>
-        Pick a home screen icon
-      </ThemedText>
+      <ThemedText type="callout">App icon</ThemedText>
 
       <View style={styles.grid}>
         {OPTIONS.map((option) => {
@@ -100,10 +95,10 @@ export function AppIconPicker() {
                 ) : null}
               </View>
               <ThemedText
-                type="small"
+                type={selected ? 'label' : 'bodySmall'}
                 themeColor={selected ? 'text' : 'textSecondary'}
                 numberOfLines={1}
-                style={[styles.label, selected && styles.selectedLabel]}>
+                style={styles.label}>
                 {option.label}
               </ThemedText>
             </Pressable>
@@ -112,7 +107,7 @@ export function AppIconPicker() {
       </View>
 
       {error ? (
-        <ThemedText type="small" themeColor="textSecondary" style={styles.error}>
+        <ThemedText type="bodySmall" themeColor="textSecondary" style={styles.error}>
           {error}
         </ThemedText>
       ) : null}
@@ -125,12 +120,6 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     borderRadius: 20,
     gap: Spacing.one,
-  },
-  title: {
-    fontSize: 16,
-  },
-  subtitle: {
-    marginBottom: Spacing.two,
   },
   grid: {
     flexDirection: 'row',
@@ -181,9 +170,6 @@ const styles = StyleSheet.create({
   label: {
     width: '100%',
     textAlign: 'center',
-  },
-  selectedLabel: {
-    fontWeight: '700',
   },
   error: {
     marginTop: Spacing.two,

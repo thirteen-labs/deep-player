@@ -15,9 +15,9 @@ export function ScreenHeader({ title, description, action }: ScreenHeaderProps) 
   return (
     <View style={styles.header}>
       <View style={styles.copy}>
-        <ThemedText type="subtitle">{title}</ThemedText>
+        <ThemedText type="title">{title}</ThemedText>
         {description ? (
-          <ThemedText themeColor="textSecondary" style={styles.description}>
+          <ThemedText type="body" themeColor="textSecondary" style={styles.description}>
             {description}
           </ThemedText>
         ) : null}

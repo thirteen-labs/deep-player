@@ -24,7 +24,7 @@ export function LoadingState({ message = 'Loading…', variant = 'inline' }: Loa
   return (
     <View style={styles.inline}>
       <Loader size={18} />
-      <ThemedText type="small" themeColor="textSecondary">
+      <ThemedText type="bodySmall" themeColor="textSecondary">
         {message}
       </ThemedText>
     </View>

@@ -17,7 +17,6 @@ type PermissionRowProps = {
   status: string;
   onRequest: () => void | Promise<void>;
   disabled?: boolean;
-  disabledHint?: string;
 };
 
 /** Label + humanized status + request button for any system permission. */
@@ -26,10 +25,9 @@ export function PermissionRow({
   status,
   onRequest,
   disabled = false,
-  disabledHint,
 }: PermissionRowProps) {
   const isGranted = status === 'granted' || status === 'limited';
-  const value = disabledHint ? `${LABELS[status] ?? status} · ${disabledHint}` : LABELS[status] ?? status;
+  const value = LABELS[status] ?? status;
 
   return (
     <View style={styles.row}>

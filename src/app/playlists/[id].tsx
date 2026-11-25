@@ -58,7 +58,7 @@ export default function PlaylistScreen() {
       emptyMessage="This playlist is empty."
       emptyDescription="Add tracks from the Music tab.">
       <SectionCard title="Playlist" gap={Spacing.three}>
-        <ThemedText type="subtitle">{title}</ThemedText>
+        <ThemedText type="title">{title}</ThemedText>
         <AppButton label="Rename" variant="ghost" size="small" onPress={() => setIsRenaming(true)} />
         <AppButton label="Delete" variant="ghost" size="small" onPress={deleteFlow} />
       </SectionCard>

@@ -1,30 +1,26 @@
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Spacing, THEME_NAMES, Themes } from '@/constants/theme';
-import { ThemePreference, useResolvedTheme } from '@/hooks/use-theme-store';
 import { GlassView } from '@/components/ui/glass-view';
 import { ThemedText } from '@/components/themed-text';
+import { Spacing, THEME_CONFIG, THEME_NAMES, Themes } from '@/constants/theme';
+import { useResolvedTheme } from '@/hooks/use-theme-store';
 
 export function ThemePicker() {
   const { preference, setPreference, theme } = useResolvedTheme();
-  const options: { key: ThemePreference; label: string; color: string }[] = [
-    { key: 'system', label: 'System', color: theme.textSecondary },
-    ...THEME_NAMES.map((name) => ({
-      key: name as ThemePreference,
-      label: Themes[name].label,
-      color: Themes[name].tint,
-    })),
-  ];
+
+  if (!THEME_CONFIG.settings.allowThemeSwitching) return null;
+
+  const options = THEME_NAMES.map((name) => ({
+    key: name,
+    label: Themes[name].label,
+    color: Themes[name].primary,
+    background: Themes[name].background,
+  }));
 
   return (
     <GlassView style={styles.container}>
-      <ThemedText type="smallBold" style={styles.title}>
-        Themes
-      </ThemedText>
-      <ThemedText type="small" themeColor="textSecondary" style={styles.subtitle}>
-        Pick a look for your player
-      </ThemedText>
+      <ThemedText type="callout">Themes</ThemedText>
       <View style={styles.grid}>
         {options.map((opt) => {
           const selected = preference === opt.key;
@@ -42,20 +38,17 @@ export function ThemePicker() {
                 style={[
                   styles.swatch,
                   {
-                    backgroundColor: opt.color,
-                    borderColor: selected ? theme.text : theme.border,
+                    backgroundColor: opt.background,
+                    borderColor: selected ? theme.primary : theme.border,
                     borderWidth: selected ? 2 : 1,
                   },
                 ]}>
-                {selected ? (
-                  <View style={[styles.swatchDot, { backgroundColor: theme.background }]} />
-                ) : null}
+                <View style={[styles.swatchAccent, { backgroundColor: opt.color }]} />
               </View>
               <ThemedText
-                type="small"
+                type={selected ? 'label' : 'bodySmall'}
                 themeColor={selected ? 'text' : 'textSecondary'}
-                numberOfLines={1}
-                style={selected ? styles.selectedLabel : undefined}>
+                numberOfLines={1}>
                 {opt.label}
               </ThemedText>
             </Pressable>
@@ -72,12 +65,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     gap: Spacing.one,
   },
-  title: {
-    fontSize: 16,
-  },
-  subtitle: {
-    marginBottom: Spacing.two,
-  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -87,24 +74,21 @@ const styles = StyleSheet.create({
   option: {
     alignItems: 'center',
     gap: Spacing.two,
-    width: 64,
+    width: 88,
   },
   pressed: {
     opacity: 0.75,
   },
   swatch: {
-    width: 44,
+    width: 88,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  swatchDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-  },
-  selectedLabel: {
-    fontWeight: '700',
+  swatchAccent: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
   },
 });

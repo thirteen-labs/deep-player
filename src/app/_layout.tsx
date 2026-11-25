@@ -6,6 +6,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { SQLiteProvider } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
 import { useEffect, useMemo } from 'react';
 import {
   configureReanimatedLogger,
@@ -13,6 +14,7 @@ import {
 } from 'react-native-reanimated';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { LayoutPersistence } from '@/components/layout-persistence';
 import { PermissionRequests } from '@/components/permission-requests';
 import { PlayerEngine } from '@/components/player-engine';
 import { SortSheetHost } from '@/components/sort-sheet-host';
@@ -20,6 +22,7 @@ import { ThemePersistence } from '@/components/theme-persistence';
 import { LoadingOverlay } from '@/components/ui';
 import { initAudioSession } from '@/lib/audio/init';
 import { initThemeDb, THEME_DB_NAME } from '@/db/theme-preference';
+import { THEME_CONFIG } from '@/constants/theme';
 import { useResolvedTheme } from '@/hooks/use-theme';
 
 // Reanimated 4 ignores dependency arrays on native. @gorhom/bottom-sheet still
@@ -41,12 +44,12 @@ export default function RootLayout() {
       dark: theme.isDark,
       colors: {
         ...base.colors,
-        primary: theme.tint,
+        primary: theme.primary,
         background: theme.background,
         card: theme.tabBarBackground,
-        text: theme.text,
+        text: theme.textPrimary,
         border: theme.border,
-        notification: theme.accent,
+        notification: theme.secondary,
       },
     };
   }, [theme]);
@@ -57,6 +60,13 @@ export default function RootLayout() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!THEME_CONFIG.settings.applyToSystemBars) return;
+    void SystemUI.setBackgroundColorAsync(theme.background).catch((error) => {
+      console.warn('System UI background update failed', error);
+    });
+  }, [theme.background]);
+
   return (
     <SQLiteProvider
       databaseName={THEME_DB_NAME}
@@ -65,17 +75,21 @@ export default function RootLayout() {
         console.warn('Theme DB init failed', error);
       }}>
       <ThemePersistence />
+      <LayoutPersistence />
       <PermissionRequests />
       <PlayerEngine />
       <GestureHandlerRootView style={{ flex: 1 }}>
         <BottomSheetModalProvider>
           <ThemeProvider value={navTheme}>
-            <StatusBar style={theme.statusBarStyle} />
+            {THEME_CONFIG.settings.applyToSystemBars ? (
+              <StatusBar style={theme.statusBarStyle} animated />
+            ) : null}
             <AnimatedSplashOverlay />
-            <SortSheetHost />
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="index" />
               <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="settings" />
+              <Stack.Screen name="search" />
               <Stack.Screen name="folders/[id]" />
               <Stack.Screen name="playlists/[id]" />
               <Stack.Screen name="albums/[artist]/[album]" />
@@ -84,6 +98,7 @@ export default function RootLayout() {
               <Stack.Screen name="videos/[id]" options={{ presentation: 'fullScreenModal' }} />
             </Stack>
             <LoadingOverlay visible={!hydrated} label="Preparing your library…" />
+            <SortSheetHost />
           </ThemeProvider>
         </BottomSheetModalProvider>
       </GestureHandlerRootView>

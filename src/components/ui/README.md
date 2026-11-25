@@ -19,10 +19,11 @@ import { AppButton, EmptyState, Screen, SectionCard } from '@/components/ui';
 | --- | --- |
 | `Screen` | Root of every tab/stack screen. Props: `title`, `description`, `headerAction`, `header`, `contentContainerStyle`, `pageStyle`. |
 | `ScreenHeader` | Standalone title + description when `Screen`'s automatic header is not enough. |
-| `TopBar` | Shared app bar: logo at far start, title, sort triggers, search/bell/profile actions. |
-| `AppLogo` | Brand mark + wordmark; optionally pressable (navigates home from `TopBar`). |
+| `TopBar` | Shared app bar: logo at far start, title, sort triggers, and search/bell actions. Search is on by default and navigates to `/search`; pass `onSearchPress` to override or `showSearch={false}` to hide it. |
+| `AppLogo` | Brand mark + wordmark; optionally pressable (navigates to the library from `TopBar`). |
 | `SortMenuButton` | Triggers the root-level universal or smart-list sort sheet. |
 | `SectionCard` | Glass card with `title`, `subtitle`, `action`, `footer`, `padding`, `gap`, `radius`. |
+| `CollectionList` / `CollectionTile` | Library collection rows or two-column tiles, driven by the Appearance list-layout setting. |
 | `GlassView` | Low-level glass surface (native liquid glass / blur / web backdrop filter). |
 
 ## Data display
@@ -51,6 +52,13 @@ import { AppButton, EmptyState, Screen, SectionCard } from '@/components/ui';
 | `PermissionRow` | Label + status + request button for system permissions. |
 | `NowPlayingCard` | Compact now-playing bar that opens `/player`. Reads the player store itself; no props needed. |
 | `AppBottomSheet` | Themed `@gorhom/bottom-sheet` wrapper; starts closed, control via ref (`present()`, `snapToIndex()`, `close()`). |
+
+## Typography and sizing
+
+- Use `ThemedText` with a semantic `type`: `display`, `title`, `subtitle`, `heading`, `callout`, `body`, `bodySmall`, `label`, `footnote`, `caption`, `eyebrow`, `numeric`, `link`, or `code`.
+- Styles come from `src/constants/typography.ts`; do not hardcode `fontSize` or `lineHeight` in screens.
+- Use `Spacing`, `Radius`, and `IconSize` from `src/constants` for layout, corner radii, and icon dimensions.
+- Font scaling follows system text-size settings; do not set `allowFontScaling={false}`.
 
 ## Hooks / utils
 

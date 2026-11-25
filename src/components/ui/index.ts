@@ -1,6 +1,7 @@
 export * from './app-bottom-sheet';
 export * from './app-button';
 export * from './app-logo';
+export * from './collection-list';
 export * from './continue-card';
 export * from './empty-state';
 export * from './folder-row';

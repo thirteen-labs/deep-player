@@ -60,7 +60,7 @@ export function AppButton({
           color={variant === 'primary' ? 'background' : variant === 'ghost' ? 'tint' : 'text'}
         />
       ) : null}
-      <ThemedText type="smallBold" themeColor={textColor}>
+      <ThemedText type="label" themeColor={textColor}>
         {label}
       </ThemedText>
     </PressableScale>

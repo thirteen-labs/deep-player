@@ -4,6 +4,7 @@ import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import { IconSize } from '@/constants/typography';
 
 import { PressableScale } from './pressable-scale';
 import { ThemedIcon } from './themed-icon';
@@ -13,6 +14,7 @@ type InfoRowProps = {
   value?: ReactNode;
   subtitle?: string;
   icon?: AppIcon;
+  iconSize?: number;
   onPress?: () => void;
   valueColor?: 'text' | 'textSecondary' | 'tint' | 'accent';
   style?: StyleProp<ViewStyle>;
@@ -24,6 +26,7 @@ export function InfoRow({
   value,
   subtitle,
   icon,
+  iconSize = IconSize.md,
   onPress,
   valueColor = 'text',
   style,
@@ -32,13 +35,13 @@ export function InfoRow({
     <>
       <View style={styles.copy}>
         <View style={styles.labelLine}>
-          {icon ? <ThemedIcon icon={icon} size={18} color="textSecondary" /> : null}
-          <ThemedText type="default" numberOfLines={1}>
+          {icon ? <ThemedIcon icon={icon} size={iconSize} color="textSecondary" /> : null}
+          <ThemedText type="body" numberOfLines={1}>
             {label}
           </ThemedText>
         </View>
         {subtitle ? (
-          <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+          <ThemedText type="bodySmall" themeColor="textSecondary" numberOfLines={1}>
             {subtitle}
           </ThemedText>
         ) : null}
@@ -46,7 +49,7 @@ export function InfoRow({
       {value != null ? (
         <View style={styles.value}>
           {typeof value === 'string' || typeof value === 'number' ? (
-            <ThemedText type="default" themeColor={valueColor} selectable>
+            <ThemedText type="body" themeColor={valueColor} selectable>
               {String(value)}
             </ThemedText>
           ) : (

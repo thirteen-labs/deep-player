@@ -3,6 +3,7 @@ import { GlassView as ExpoGlassView, isLiquidGlassAvailable } from 'expo-glass-e
 import { PropsWithChildren } from 'react';
 import { Platform, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 
+import { Radius } from '@/constants/typography';
 import { useTheme } from '@/hooks/use-theme';
 
 type GlassViewProps = PropsWithChildren<{
@@ -15,7 +16,7 @@ type GlassViewProps = PropsWithChildren<{
 export function GlassView({ children, style, intensity = 55, interactive = false }: GlassViewProps) {
   const theme = useTheme();
   const flattened = StyleSheet.flatten(style) || {};
-  const borderRadius = (flattened.borderRadius as number | undefined) ?? 20;
+  const borderRadius = (flattened.borderRadius as number | undefined) ?? Radius.xl;
 
   if (Platform.OS === 'ios' && isLiquidGlassAvailable()) {
     return (

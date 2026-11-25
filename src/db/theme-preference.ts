@@ -5,7 +5,7 @@ import { THEME_NAMES, type ThemePreference } from '@/constants/theme';
 export const THEME_DB_NAME = 'deep-player.db';
 
 const THEME_KEY = 'theme_preference';
-const VALID_PREFERENCES = new Set<string>(['system', ...THEME_NAMES]);
+const VALID_PREFERENCES = new Set<string>(THEME_NAMES);
 
 export async function initThemeDb(db: SQLiteDatabase): Promise<void> {
   await db.execAsync(

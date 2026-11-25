@@ -8,7 +8,7 @@ import { useSortStore } from '@/stores/sort-store';
 import { resolveFolderTracks } from '@/utils/folder-tracks';
 import { sortFolders } from '@/utils/sort';
 
-/** Folder browser: video series, smartlists and music folders in one place. */
+/** Folder browser: smart video folders generated from recurring series names. */
 export default function FoldersScreen() {
   const load = useDbStore((s) => s.load);
   const folders = useDbStore((s) => s.folders);
@@ -21,27 +21,6 @@ export default function FoldersScreen() {
     if (!isLoaded) void load();
   }, [isLoaded, load]);
 
-  const musicFolders = useMemo(
-    () => sortFolders(folders.filter((f) => f.kind === 'folder' && !f.smartlistType), smartListSort),
-    [folders, smartListSort],
-  );
-  const videoSeries = useMemo(
-    () => sortFolders(folders.filter((f) => f.smartlistType === 'series'), smartListSort),
-    [folders, smartListSort],
-  );
-  const musicSmartlists = useMemo(
-    () => sortFolders(folders.filter((f) => f.kind === 'smartlist' && f.mediaType === 'music'), smartListSort),
-    [folders, smartListSort],
-  );
-  const videoSmartlists = useMemo(
-    () =>
-      sortFolders(
-        folders.filter((f) => f.kind === 'smartlist' && f.mediaType === 'video' && f.smartlistType !== 'series'),
-        smartListSort,
-      ),
-    [folders, smartListSort],
-  );
-
   const folderCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const folder of folders) {
@@ -50,44 +29,31 @@ export default function FoldersScreen() {
     return counts;
   }, [folders, tracks, folderTracks]);
 
+  const smartFolders = useMemo(
+    () =>
+      sortFolders(
+        folders.filter(
+          (folder) =>
+            folder.smartlistType === 'series' && (folderCounts.get(folder.id) ?? 0) > 0,
+        ),
+        smartListSort,
+      ),
+    [folderCounts, folders, smartListSort],
+  );
+
   const openFolder = (id: string) => router.push(`/folders/${encodeURIComponent(id)}`);
 
   return (
     <Screen header={<TopBar title="Folders" showSmartSort showNotifications={false} />}>
       <FolderSection
-        title="Video series"
-        subtitle="Generated from matching episode names"
-        folders={videoSeries}
+        title="Smart folders"
+        subtitle="Videos grouped by series name"
+        folders={smartFolders}
         counts={folderCounts}
         unit="videos"
         isLoading={!isLoaded}
-        emptyMessage="No series folders yet"
-        emptyDescription="Name videos like 'Show SN1 EP1' and series appear automatically."
-        onOpen={openFolder}
-      />
-      <FolderSection
-        title="Video smartlists"
-        folders={videoSmartlists}
-        counts={folderCounts}
-        unit="videos"
-        emptyMessage="No video smartlists yet."
-        onOpen={openFolder}
-      />
-      <FolderSection
-        title="Music folders"
-        folders={musicFolders}
-        counts={folderCounts}
-        unit="tracks"
-        emptyMessage="No folders yet."
-        emptyDescription="Your music folders will appear here."
-        onOpen={openFolder}
-      />
-      <FolderSection
-        title="Music smartlists"
-        folders={musicSmartlists}
-        counts={folderCounts}
-        unit="tracks"
-        emptyMessage="No music smartlists yet."
+        emptyMessage="No smart folders yet"
+        emptyDescription="Add videos with matching series names to build them automatically."
         onOpen={openFolder}
       />
     </Screen>

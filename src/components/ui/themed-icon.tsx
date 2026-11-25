@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import type { SvgProps } from 'react-native-svg';
 
 import { THEME_COLOR_KEYS, type ThemeColor } from '@/constants/theme';
+import { IconSize } from '@/constants/typography';
 import { useTheme } from '@/hooks/use-theme';
 
 /** Any Iconoir icon component, which renders through react-native-svg. */
@@ -21,7 +22,7 @@ type ThemedIconProps = {
 /** Iconoir icon that follows the active theme palette. */
 export function ThemedIcon({
   icon: Icon,
-  size = 20,
+  size = IconSize.md,
   color,
   fill,
   strokeWidth = 1.75,

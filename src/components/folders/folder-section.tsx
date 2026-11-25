@@ -1,4 +1,7 @@
-import { EmptyState, FolderRow, LoadingState, SectionCard } from '@/components/ui';
+import { useMemo } from 'react';
+
+import { CollectionList, EmptyState, folderIcon, LoadingState, SectionCard } from '@/components/ui';
+import type { CollectionItem } from '@/components/ui';
 import type { Folder } from '@/lib/db/schema';
 
 type FolderSectionProps = {
@@ -25,17 +28,23 @@ export function FolderSection({
   isLoading = false,
   onOpen,
 }: FolderSectionProps) {
+  const items = useMemo<CollectionItem[]>(
+    () =>
+      folders.map((folder) => ({
+        key: folder.id,
+        label: folder.name,
+        subtitle: `${counts.get(folder.id) ?? 0} ${unit}`,
+        value: folder.smartlistType ? 'Smart' : undefined,
+        icon: folderIcon(folder),
+        onPress: () => onOpen(folder.id),
+      })),
+    [folders, counts, unit, onOpen],
+  );
+
   return (
     <SectionCard title={title} subtitle={subtitle}>
       {isLoading ? <LoadingState message={`Loading ${title.toLowerCase()}…`} /> : null}
-      {folders.map((folder) => (
-        <FolderRow
-          key={folder.id}
-          folder={folder}
-          subtitle={`${counts.get(folder.id) ?? 0} ${unit}`}
-          onPress={() => onOpen(folder.id)}
-        />
-      ))}
+      {!isLoading && folders.length > 0 ? <CollectionList items={items} /> : null}
       {!isLoading && folders.length === 0 ? (
         <EmptyState message={emptyMessage} description={emptyDescription} />
       ) : null}

@@ -160,15 +160,15 @@ export function buildArtworkPalette(
   base: ThemePalette,
   artworkUri?: string | null,
 ): ThemePalette {
-  const source = normalizeColor(sourceColor, base.tint);
+  const source = normalizeColor(sourceColor, base.primary);
   const [, saturation] = rgbToHsl(hexToRgb(source));
   const vivid = clamp(saturation, 0.32, 0.85);
 
-  const tint = withHsl(source, { s: vivid, l: base.isDark ? 0.66 : 0.4 }, base.tint);
+  const tint = withHsl(source, { s: vivid, l: base.isDark ? 0.66 : 0.4 }, base.primary);
   const accent = withHsl(
     source,
     { s: clamp(vivid + 0.06, 0, 1), l: base.isDark ? 0.74 : 0.46 },
-    base.accent,
+    base.secondary,
   );
   const background = mixHex(
     source,
@@ -176,37 +176,44 @@ export function buildArtworkPalette(
     base.isDark ? 0.88 : 0.92,
     base.background,
   );
-  const backgroundElement = mixHex(
+  const surface = mixHex(
     source,
     base.isDark ? '#0B0F16' : '#FFFFFF',
     base.isDark ? 0.78 : 0.86,
-    base.backgroundElement,
+    base.surface,
   );
-  const backgroundSelected = mixHex(
+  const surfaceElevated = mixHex(
     source,
     base.isDark ? '#161C26' : '#FFFFFF',
     base.isDark ? 0.68 : 0.76,
-    base.backgroundSelected,
+    base.surfaceElevated,
   );
-  const text = mixHex(source, base.isDark ? '#FFFFFF' : '#000000', 0.94, base.text);
+  const text = mixHex(source, base.isDark ? '#FFFFFF' : '#000000', 0.94, base.textPrimary);
+  const textSecondary = mixHex(text, background, 0.34, base.textSecondary);
 
   return {
     ...base,
     background,
-    backgroundElement,
-    backgroundSelected,
+    surface,
+    surfaceElevated,
+    primary: tint,
+    secondary: accent,
+    textPrimary: text,
+    playerBackground: background,
+    backgroundElement: surface,
+    backgroundSelected: surfaceElevated,
     tint,
     accent,
     text,
-    textSecondary: mixHex(text, background, 0.34, base.textSecondary),
+    textSecondary,
     border: rgba(source, 0.22, base.border),
     glassBackground: base.isDark
-      ? rgba(backgroundElement, 0.6, base.glassBackground)
-      : rgba(base.background, 0.62, base.glassBackground),
+      ? rgba(surfaceElevated, 0.62, base.glassBackground)
+      : rgba(base.surface, 0.72, base.glassBackground),
     glassBorder: base.isDark
       ? rgba(text, 0.14, base.glassBorder)
       : rgba(source, 0.18, base.glassBorder),
-    gradient: `linear-gradient(180deg, ${backgroundElement} 0%, ${background} 55%, ${background} 100%)`,
+    gradient: `linear-gradient(180deg, ${surfaceElevated} 0%, ${background} 55%, ${background} 100%)`,
     backgroundImage: artworkUri ?? undefined,
     blurTint: base.isDark ? 'systemMaterialDark' : 'systemMaterialLight',
     statusBarStyle: base.isDark ? 'light' : 'dark',

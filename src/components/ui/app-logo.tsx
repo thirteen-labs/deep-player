@@ -29,7 +29,7 @@ export function AppLogo({ compact = false, onPress }: AppLogoProps) {
         <ThemedIcon icon={SineWave} size={18} color={theme.background} strokeWidth={2.4} />
       </LinearGradient>
       {!compact ? (
-        <ThemedText type="smallBold" style={styles.wordmark}>
+        <ThemedText type="label" style={styles.wordmark}>
           Deep Player
         </ThemedText>
       ) : null}
@@ -37,7 +37,7 @@ export function AppLogo({ compact = false, onPress }: AppLogoProps) {
   );
 
   return onPress ? (
-    <PressableScale accessibilityRole="button" accessibilityLabel="Deep Player home" onPress={onPress} style={styles.tap}>
+    <PressableScale accessibilityRole="button" accessibilityLabel="Deep Player library" onPress={onPress} style={styles.tap}>
       {content}
     </PressableScale>
   ) : (

@@ -18,7 +18,7 @@ type ContinueCardProps = {
   onPress: () => void;
 };
 
-/** Compact resume card used by the Home dashboard. */
+/** Compact resume card for in-progress media. */
 export function ContinueCard({ item, mediaType, onPress }: ContinueCardProps) {
   const theme = useTheme();
   const isVideo = mediaType === 'video';
@@ -42,10 +42,10 @@ export function ContinueCard({ item, mediaType, onPress }: ContinueCardProps) {
             <ThemedIcon icon={Play} size={13} color="background" strokeWidth={2.5} />
           </View>
         </View>
-        <ThemedText type="smallBold" numberOfLines={1} style={styles.title}>
+        <ThemedText type="label" numberOfLines={1} style={styles.title}>
           {item.track.title || 'Untitled'}
         </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.subtitle}>
+        <ThemedText type="bodySmall" themeColor="textSecondary" numberOfLines={1} style={styles.subtitle}>
           {remaining > 0 ? `${formatTime(remaining)} left` : `${formatTime(item.position)} in`}
         </ThemedText>
         <View style={[styles.track, { backgroundColor: theme.backgroundSelected }]}>

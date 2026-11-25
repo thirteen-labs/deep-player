@@ -48,7 +48,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#202020",
+          "backgroundColor": "#090B12",
           "image": "./assets/images/splash.png",
           "imageWidth": 144
         }
@@ -73,7 +73,7 @@
       [
         "expo-notifications",
         {
-          "color": "#0A7EA4"
+          "color": "#7887FF"
         }
       ],
       "expo-media-library",

@@ -3,6 +3,7 @@ import { MusicDoubleNote as MusicIcon } from 'iconoir-react-native';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ThemedView } from '@/components/themed-view';
+import { Radius } from '@/constants/typography';
 
 import { ThemedIcon, type AppIcon } from './themed-icon';
 
@@ -19,7 +20,7 @@ type MediaArtworkProps = {
 export function MediaArtwork({
   uri,
   size = 160,
-  radius = 28,
+  radius = Radius.huge,
   fallbackIcon,
   style,
 }: MediaArtworkProps) {

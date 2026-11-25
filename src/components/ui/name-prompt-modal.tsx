@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, TextInput
 
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import { Radius, Typography } from '@/constants/typography';
 import { useTheme } from '@/hooks/use-theme';
 
 import { AppButton } from './app-button';
@@ -48,12 +49,12 @@ export function NamePromptModal({
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <View style={styles.backdrop}>
+        <View style={[styles.backdrop, { backgroundColor: theme.overlay }]}>
           <Pressable style={styles.dismissArea} accessibilityLabel="Dismiss dialog" onPress={onCancel} />
           <GlassView style={[styles.card, { borderColor: theme.glassBorder }]}>
-            <ThemedText type="smallBold">{title}</ThemedText>
+            <ThemedText type="label">{title}</ThemedText>
             {description ? (
-              <ThemedText type="small" themeColor="textSecondary">
+              <ThemedText type="bodySmall" themeColor="textSecondary">
                 {description}
               </ThemedText>
             ) : null}
@@ -102,17 +103,17 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 420,
-    borderRadius: 24,
+    borderRadius: Radius.xxl,
     borderWidth: 1,
     padding: Spacing.four,
     gap: Spacing.two,
   },
   input: {
+    ...Typography.body,
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: Radius.lg,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    fontSize: 16,
   },
   actions: {
     flexDirection: 'row',

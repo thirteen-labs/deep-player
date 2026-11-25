@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ImageColorsResult } from 'react-native-image-colors';
 
-import type { ThemePalette } from '@/constants/theme';
+import { THEME_CONFIG, type ThemePalette } from '@/constants/theme';
 import { useResolvedTheme } from '@/hooks/use-theme-store';
 import { extractImageColors } from '@/lib/image-colors';
 import { buildArtworkPalette, pickSourceColor } from '@/utils/color';
@@ -16,18 +16,19 @@ const EMPTY_STATE: ColorState = { uri: '', colors: null };
 /**
  * Derives a full theme palette from the current track's artwork. Uses the
  * resolved app theme as the light/dark and contrast baseline, and falls back to
- * its tint when there is no artwork or color extraction fails.
+ * its primary color when there is no artwork or color extraction fails.
  */
 export function useArtworkPalette(uri?: string | null): ThemePalette | null {
   const { theme: baseTheme } = useResolvedTheme();
   const [state, setState] = useState<ColorState>(EMPTY_STATE);
+  const enabled = THEME_CONFIG.settings.dynamicAlbumArtTheme;
 
   useEffect(() => {
     let cancelled = false;
-    if (!uri) return;
+    if (!enabled || !uri) return;
 
     void extractImageColors(uri, {
-      fallback: baseTheme.tint,
+      fallback: baseTheme.primary,
       cache: true,
       key: uri,
       quality: 'low',
@@ -39,11 +40,11 @@ export function useArtworkPalette(uri?: string | null): ThemePalette | null {
     return () => {
       cancelled = true;
     };
-  }, [uri, baseTheme.tint]);
+  }, [enabled, uri, baseTheme.primary]);
 
   return useMemo(() => {
-    if (!uri) return null;
+    if (!enabled || !uri) return null;
     const colors = state.uri === uri ? state.colors : null;
-    return buildArtworkPalette(pickSourceColor(colors, baseTheme.tint), baseTheme, uri);
-  }, [uri, state, baseTheme]);
+    return buildArtworkPalette(pickSourceColor(colors, baseTheme.primary), baseTheme, uri);
+  }, [enabled, uri, state, baseTheme]);
 }

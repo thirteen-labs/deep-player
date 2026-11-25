@@ -34,6 +34,7 @@ import {
   VolumeSlider,
 } from '@/components/ui';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { IconSize, Radius } from '@/constants/typography';
 import { useArtworkPalette } from '@/hooks/use-artwork-palette';
 import { useMediaShortcuts } from '@/hooks/use-media-shortcuts';
 import { useTheme } from '@/hooks/use-theme';
@@ -130,10 +131,10 @@ export default function AudioPlayerScreen() {
               onPress={() => router.back()}
             />
             <View style={styles.headerCopy}>
-              <ThemedText type="smallBold" themeColor="textSecondary" style={styles.eyebrow}>
+              <ThemedText type="eyebrow" themeColor="textSecondary">
                 NOW PLAYING
               </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+              <ThemedText type="bodySmall" themeColor="textSecondary" numberOfLines={1}>
                 {track.album || 'Deep Player'}
               </ThemedText>
             </View>
@@ -149,7 +150,7 @@ export default function AudioPlayerScreen() {
             <MediaArtwork
               uri={track.artworkUri}
               size={artworkSize}
-              radius={28}
+              radius={Radius.huge}
               style={[
                 styles.artwork,
                 { boxShadow: `0 18px 45px ${withAlpha(playerTheme.text, 0.22)}` },
@@ -157,10 +158,10 @@ export default function AudioPlayerScreen() {
             />
             <View style={styles.trackInfo}>
               <View style={styles.trackCopy}>
-                <ThemedText type="subtitle" style={styles.title} numberOfLines={2} selectable>
+                <ThemedText type="title" numberOfLines={2} selectable>
                   {track.title || track.uri}
                 </ThemedText>
-                <ThemedText type="default" themeColor="textSecondary" numberOfLines={1} selectable>
+                <ThemedText type="body" themeColor="textSecondary" numberOfLines={1} selectable>
                   {track.artist || 'Unknown artist'}
                 </ThemedText>
               </View>
@@ -186,7 +187,7 @@ export default function AudioPlayerScreen() {
               icon={SkipPrev}
               accessibilityLabel="Previous track"
               size={54}
-              iconSize={26}
+              iconSize={IconSize.xl}
               onPress={previous}
             />
             <IconButton
@@ -194,14 +195,14 @@ export default function AudioPlayerScreen() {
               accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
               variant="primary"
               size={72}
-              iconSize={32}
+              iconSize={IconSize.xxl}
               onPress={togglePlay}
             />
             <IconButton
               icon={SkipNext}
               accessibilityLabel="Next track"
               size={54}
-              iconSize={26}
+              iconSize={IconSize.xl}
               onPress={next}
             />
             <IconButton
@@ -219,7 +220,7 @@ export default function AudioPlayerScreen() {
           </View>
 
           <View style={styles.settingRow}>
-            <ThemedText type="small" themeColor="textSecondary">
+            <ThemedText type="bodySmall" themeColor="textSecondary">
               Speed
             </ThemedText>
             <SegmentedControl
@@ -234,11 +235,11 @@ export default function AudioPlayerScreen() {
               icon={isMuted || volume === 0 ? SoundOff : SoundHigh}
               accessibilityLabel={isMuted ? 'Unmute' : 'Mute'}
               size={36}
-              iconSize={18}
+              iconSize={IconSize.md}
               onPress={toggleMute}
             />
             <VolumeSlider volume={volume} muted={isMuted} onVolumeChange={setVolume} />
-            <ThemedText type="small" themeColor="textSecondary" style={styles.volumeValue}>
+            <ThemedText type="numeric" themeColor="textSecondary" style={styles.volumeValue}>
               {isMuted ? 'Muted' : `${Math.round(volume * 100)}%`}
             </ThemedText>
           </View>
@@ -253,17 +254,17 @@ export default function AudioPlayerScreen() {
                 },
               ]}>
               <View style={styles.queueHeader}>
-                <ThemedText type="smallBold">Queue ({queue.length})</ThemedText>
+                <ThemedText type="label">Queue ({queue.length})</ThemedText>
                 <IconButton
                   icon={Xmark}
                   accessibilityLabel="Hide queue"
                   size={32}
-                  iconSize={16}
+                  iconSize={IconSize.sm}
                   onPress={() => setShowQueue(false)}
                 />
               </View>
               {queue.length === 0 ? (
-                <ThemedText type="small" themeColor="textSecondary">
+                <ThemedText type="bodySmall" themeColor="textSecondary">
                   The queue is empty. Add tracks from any library list.
                 </ThemedText>
               ) : (
@@ -281,12 +282,12 @@ export default function AudioPlayerScreen() {
                       onPress={() => playAt(index)}
                       style={styles.queueInfo}
                     >
-                      <MediaArtwork uri={item.artworkUri} size={40} radius={Spacing.one} />
+                      <MediaArtwork uri={item.artworkUri} size={40} radius={Radius.xs} />
                       <View style={styles.queueCopy}>
-                        <ThemedText type="smallBold" numberOfLines={1}>
+                        <ThemedText type="label" numberOfLines={1}>
                           {item.title || item.uri}
                         </ThemedText>
-                        <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                        <ThemedText type="bodySmall" themeColor="textSecondary" numberOfLines={1}>
                           {item.artist || 'Unknown artist'}
                         </ThemedText>
                       </View>
@@ -295,7 +296,7 @@ export default function AudioPlayerScreen() {
                       icon={NavArrowUp}
                       accessibilityLabel="Move up"
                       size={30}
-                      iconSize={15}
+                      iconSize={IconSize.sm}
                       variant="plain"
                       disabled={index === 0}
                       onPress={() => moveQueueItem(index, index - 1)}
@@ -304,7 +305,7 @@ export default function AudioPlayerScreen() {
                       icon={NavArrowDown}
                       accessibilityLabel="Move down"
                       size={30}
-                      iconSize={15}
+                      iconSize={IconSize.sm}
                       variant="plain"
                       disabled={index === queue.length - 1}
                       onPress={() => moveQueueItem(index, index + 1)}
@@ -313,7 +314,7 @@ export default function AudioPlayerScreen() {
                       icon={Trash}
                       accessibilityLabel="Remove from queue"
                       size={30}
-                      iconSize={15}
+                      iconSize={IconSize.sm}
                       variant="plain"
                       onPress={() => removeFromQueue(index)}
                     />
@@ -324,7 +325,7 @@ export default function AudioPlayerScreen() {
           ) : null}
 
           {Platform.OS === 'web' ? (
-            <ThemedText type="small" themeColor="textSecondary" style={styles.hint} selectable>
+            <ThemedText type="footnote" themeColor="textSecondary" selectable>
               Shortcuts — Space/K play · ←/→ seek 10s · J/L seek · N/B tracks · 9/0 volume · M mute
               · S speed · Esc close
             </ThemedText>
@@ -362,9 +363,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.half,
   },
-  eyebrow: {
-    letterSpacing: 2,
-  },
   hero: {
     alignItems: 'center',
     gap: Spacing.four,
@@ -380,10 +378,6 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: Spacing.half,
   },
-  title: {
-    fontSize: 26,
-    lineHeight: 32,
-  },
   transport: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -397,12 +391,11 @@ const styles = StyleSheet.create({
   volumeValue: {
     width: 52,
     textAlign: 'right',
-    fontVariant: ['tabular-nums'],
   },
   queue: {
     gap: Spacing.two,
     padding: Spacing.two,
-    borderRadius: 20,
+    borderRadius: Radius.xl,
     borderCurve: 'continuous',
     borderWidth: 1,
   },
@@ -415,7 +408,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.half,
-    borderRadius: 14,
+    borderRadius: Radius.lg,
     borderCurve: 'continuous',
   },
   queueInfo: {
@@ -429,8 +422,5 @@ const styles = StyleSheet.create({
   queueCopy: {
     flex: 1,
     gap: Spacing.half,
-  },
-  hint: {
-    lineHeight: 18,
   },
 });

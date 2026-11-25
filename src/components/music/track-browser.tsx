@@ -14,6 +14,7 @@ import {
   SectionCard,
 } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
+import { Radius, Typography } from '@/constants/typography';
 import { useTheme } from '@/hooks/use-theme';
 import { useDbStore, type Track } from '@/lib/db/store';
 import { fetchTrackMetadata } from '@/lib/metadata';
@@ -195,7 +196,7 @@ export function TrackBrowser({
 
         {selectionMode ? (
           <View style={styles.selectionBar}>
-            <ThemedText type="small" themeColor="textSecondary">
+            <ThemedText type="bodySmall" themeColor="textSecondary">
               {selectedIds.size} selected
             </ThemedText>
             <View style={styles.selectionActions}>
@@ -256,7 +257,7 @@ export function TrackBrowser({
       </SectionCard>
 
       <AppBottomSheet ref={editSheetRef} title="Edit track" snapPoints={['65%']}>
-        <ThemedText type="small" themeColor="textSecondary">
+        <ThemedText type="bodySmall" themeColor="textSecondary">
           Update track info, fetch metadata, or delete.
         </ThemedText>
         <LabeledInput label="Title" value={editTitle} onChangeText={setEditTitle} />
@@ -296,7 +297,7 @@ function LabeledInput({
   const theme = useTheme();
   return (
     <View style={styles.inputWrap}>
-      <ThemedText type="small" themeColor="textSecondary">
+      <ThemedText type="bodySmall" themeColor="textSecondary">
         {label}
       </ThemedText>
       <TextInput
@@ -312,9 +313,10 @@ function LabeledInput({
 
 const styles = StyleSheet.create({
   search: {
+    ...Typography.body,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    borderRadius: 28,
+    borderRadius: Radius.huge,
     borderCurve: 'continuous',
     borderWidth: 1,
   },
@@ -337,13 +339,13 @@ const styles = StyleSheet.create({
     marginTop: Spacing.two,
   },
   inputWrap: {
-    gap: 4,
+    gap: Spacing.one,
   },
   input: {
+    ...Typography.body,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: Radius.md,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    fontSize: 14,
   },
 });

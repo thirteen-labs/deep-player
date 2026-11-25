@@ -1,6 +1,7 @@
 import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useRef } from 'react';
 
+import { THEME_CONFIG } from '@/constants/theme';
 import { loadThemePreference, saveThemePreference } from '@/db/theme-preference';
 import { useThemeStore, type ThemePreference } from '@/hooks/use-theme-store';
 
@@ -15,9 +16,11 @@ export function ThemePersistence() {
     let cancelled = false;
     (async () => {
       try {
-        const saved = await loadThemePreference(db);
+        const saved = THEME_CONFIG.settings.persistSelection
+          ? await loadThemePreference(db)
+          : null;
         if (cancelled) return;
-        const next = saved ?? useThemeStore.getState().preference;
+        const next = saved ?? THEME_CONFIG.settings.defaultTheme;
         savedRef.current = next;
         hydrate(next);
       } catch {
@@ -37,7 +40,13 @@ export function ThemePersistence() {
   }, [db, hydrate]);
 
   useEffect(() => {
-    if (!loadedRef.current || preference === savedRef.current) return;
+    if (
+      !THEME_CONFIG.settings.persistSelection ||
+      !loadedRef.current ||
+      preference === savedRef.current
+    ) {
+      return;
+    }
     savedRef.current = preference;
     saveThemePreference(db, preference).catch(() => {
       // Persistence failures should not break theme switching.

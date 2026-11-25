@@ -1,27 +1,19 @@
-import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
-import { Plus } from 'iconoir-react-native';
-import { useMemo, useState, type ReactNode } from 'react';
+import { Album, Playlist, Plus, User } from 'iconoir-react-native';
+import { useMemo, useState } from 'react';
 
 import {
   AppButton,
+  CollectionList,
   EmptyState,
-  InfoRow,
   LoadingState,
   NamePromptModal,
   SectionCard,
 } from '@/components/ui';
-import type { AppIcon } from '@/components/ui/themed-icon';
+import type { CollectionItem } from '@/components/ui';
 import { useDbStore } from '@/lib/db/store';
 
-type LibraryRow = {
-  key: string;
-  label: string;
-  subtitle?: string;
-  value?: ReactNode;
-  icon?: AppIcon;
-  onPress: () => void;
-};
+type LibraryRow = CollectionItem;
 
 type RowListProps = {
   rows: LibraryRow[];
@@ -38,22 +30,7 @@ function LibraryRowList({ rows, isLoading, emptyMessage, emptyDescription }: Row
     return <EmptyState message={emptyMessage} description={emptyDescription} />;
   }
 
-  return (
-    <FlashList
-      data={rows}
-      keyExtractor={(row) => row.key}
-      renderItem={({ item }) => (
-        <InfoRow
-          label={item.label}
-          subtitle={item.subtitle}
-          value={item.value}
-          valueColor="textSecondary"
-          icon={item.icon}
-          onPress={item.onPress}
-        />
-      )}
-    />
-  );
+  return <CollectionList items={rows} />;
 }
 
 /** Albums section of the Music page. */
@@ -69,6 +46,7 @@ export function AlbumList() {
           key: `${album.artist || '_'}/${title}`,
           label: title,
           subtitle: album.artist || undefined,
+          icon: Album,
           onPress: () =>
             router.push(
               `/albums/${encodeURIComponent(album.artist || '_')}/${encodeURIComponent(title)}`,
@@ -100,6 +78,7 @@ export function ArtistList() {
       artists.map((artist) => ({
         key: artist,
         label: artist,
+        icon: User,
         onPress: () => router.push(`/artists/${encodeURIComponent(artist)}`),
       })),
     [artists],
@@ -139,6 +118,7 @@ export function PlaylistList() {
         key: playlist.id,
         label: playlist.name,
         value: `${trackCounts.get(playlist.id) ?? 0} tracks`,
+        icon: Playlist,
         onPress: () => router.push(`/playlists/${playlist.id}`),
       })),
     [playlists, trackCounts],

@@ -66,7 +66,7 @@ export const AppBottomSheet = forwardRef<ComponentRef<typeof BottomSheet>, AppBo
         )}>
         <BottomSheetView style={[styles.content, contentStyle]}>
           {title ? (
-            <ThemedText type="smallBold" style={styles.title}>
+            <ThemedText type="label" style={styles.title}>
               {title}
             </ThemedText>
           ) : null}

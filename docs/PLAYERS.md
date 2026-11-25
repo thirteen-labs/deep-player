@@ -62,8 +62,8 @@ Key behaviors:
   (0.5×–2×), mute, fullscreen and Picture-in-Picture (when supported).
 - The player pauses other audio (`audioMixingMode: 'doNotMix'`), keeps a media
   notification, keeps the screen on, and preserves pitch when speed changes.
-- Resume position and "watched" state are stored in the same `playbackPositions`
-  table used by Home → Continue watching.
+- Resume position and "watched" state are stored in the `playbackPositions`
+  table used by the bottom-right Continue watching button.
 
 ## Configuration
 

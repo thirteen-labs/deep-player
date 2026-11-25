@@ -16,6 +16,7 @@ type SegmentedControlProps<T extends string | number> = {
   value: T;
   onValueChange: (value: T) => void;
   style?: StyleProp<ViewStyle>;
+  segmentStyle?: StyleProp<ViewStyle>;
 };
 
 /** Generic themed segmented control (playback speed, filters, etc.). */
@@ -24,6 +25,7 @@ export function SegmentedControl<T extends string | number>({
   value,
   onValueChange,
   style,
+  segmentStyle,
 }: SegmentedControlProps<T>) {
   const theme = useTheme();
 
@@ -43,8 +45,8 @@ export function SegmentedControl<T extends string | number>({
             accessibilityState={{ selected }}
             accessibilityLabel={option.label}
             onPress={() => onValueChange(option.value)}
-            style={[styles.segment, selected && { backgroundColor: theme.tint }]}>
-            <ThemedText type="smallBold" themeColor={selected ? 'background' : 'textSecondary'}>
+            style={[styles.segment, segmentStyle, selected && { backgroundColor: theme.tint }]}>
+            <ThemedText type="label" themeColor={selected ? 'background' : 'textSecondary'}>
               {option.label}
             </ThemedText>
           </PressableScale>

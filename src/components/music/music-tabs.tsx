@@ -44,7 +44,7 @@ export function MusicTabs({ value, onValueChange }: MusicTabsProps) {
               accessibilityLabel={section.label}
               onPress={() => onValueChange(section.value)}
               style={[styles.tab, active && { backgroundColor: theme.tint }]}>
-              <ThemedText type="smallBold" themeColor={active ? 'background' : 'textSecondary'}>
+              <ThemedText type="label" themeColor={active ? 'background' : 'textSecondary'}>
                 {section.label}
               </ThemedText>
             </PressableScale>

@@ -8,139 +8,160 @@ export type SeriesGroup = {
   trackIds: string[];
 };
 
-type ParsedTitle = {
-  id: string;
-  name: string;
-  season: number | null;
-  episode: number | null;
-};
+const EXTENSION_RE = /\.[a-z0-9]{2,4}$/i;
+const BRACKETED_RE = /[([][^\])]*[)\]]/g;
+const YEAR_RE = /\b(?:19|20)\d{2}\b/g;
+const TECH_RE = /\b(?:2160p|1080p|720p|480p|4k|uhd|hdr|hdr10|10bit|bluray|bdrip|brrip|webrip|webdl|web|remux|proper|repack|internal|extended|unrated|imax|dual|audio|x264|x265|h264|h265|hevc|aac|ac3|eac3|ddp5|dts)\b/gi;
+const NUMBER_RE = /\b(?:s\d{1,2}\s*e\d{1,2}|sn\s*\d{1,2}|\d{1,2}\s*x\s*\d{1,3}|ep(?:isode)?\s*\d+|part\s*\d+|pt\.?\s*\d+|vol(?:ume)?\s*\d+|\d{1,4})\b/gi;
+const SEPARATOR_RE = /\s(?:[-–—:|]|\bpart\b|\bep(?:isode)?\b|\bchapter\b)\s/i;
+const LEADING_IGNORED = new Set(['the', 'a', 'an']);
+const BROAD_PRIMARIES = new Set([
+  'space',
+  'world',
+  'history',
+  'story',
+  'love',
+  'life',
+  'time',
+  'night',
+  'day',
+  'real',
+  'true',
+  'ultimate',
+]);
+const GENERIC_TOKENS = new Set([
+  'video',
+  'videos',
+  'movie',
+  'movies',
+  'film',
+  'films',
+  'clip',
+  'clips',
+  'episode',
+  'ep',
+  'part',
+  'pt',
+  'season',
+  'series',
+  'sample',
+  'test',
+  'full',
+  'final',
+  'best',
+  'new',
+  'hd',
+  'hq',
+]);
 
-// Quality/source tags are not part of a series name.
-const JUNK_PATTERN =
-  /\b(1080p|720p|2160p|4k|uhd|hdr|hdr10|10bit|x264|x265|h264|h265|hevc|aac|ac3|eac3|ddp5|dts|bluray|bdrip|brrip|webrip|webdl|web|remux|proper|repack|internal|extended|unrated|imax|dual|audio|full)\b/gi;
-
-function normalizeTitle(title: string) {
+/** Removes file noise that should not decide which smart folder a video joins. */
+function cleanTitle(title: string): string {
   return title
-    .replace(/\.[a-z0-9]{2,4}$/i, '')
-    .toLowerCase()
-    .replace(/[_.\-–—]+/g, ' ')
-    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(EXTENSION_RE, '')
+    .replace(BRACKETED_RE, ' ')
+    .replace(YEAR_RE, ' ')
+    .replace(TECH_RE, ' ')
+    .replace(NUMBER_RE, ' ')
+    .replace(/^\s*[-–—:|]\s*/, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
-function titleCase(value: string) {
-  return value
+/** Leading tokens used to recognize a series: "X-Men 2", "X-Men - ...", etc. */
+function titleTokens(title: string): string[] {
+  const cleaned = cleanTitle(title);
+  const base = cleaned.split(SEPARATOR_RE)[0] ?? cleaned;
+  const tokens = base
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, ' ')
     .split(' ')
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .filter(Boolean);
+
+  while (tokens.length > 0 && LEADING_IGNORED.has(tokens[0])) tokens.shift();
+  return tokens.filter((token) => !GENERIC_TOKENS.has(token));
+}
+
+function sharedPrefix(groups: string[][]): string[] {
+  if (groups.length === 0) return [];
+  const prefix = [...groups[0]];
+  for (const tokens of groups.slice(1)) {
+    let index = 0;
+    while (index < prefix.length && index < tokens.length && prefix[index] === tokens[index]) {
+      index += 1;
+    }
+    prefix.length = index;
+    if (prefix.length === 0) break;
+  }
+  return prefix;
+}
+
+function formatName(tokens: string[]): string {
+  return tokens
+    .map((token) =>
+      token
+        .split('-')
+        .map((part) => (part ? part.charAt(0).toUpperCase() + part.slice(1) : part))
+        .join('-'),
+    )
     .join(' ');
 }
 
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 64);
-}
-
-function removeMatches(source: string, matches: string[]) {
-  let result = source;
-  for (const match of matches) {
-    if (match) result = result.replace(match, ' ');
-  }
-  return result
-    .replace(JUNK_PATTERN, ' ')
-    .replace(/\b(?:season|sn|s|e|ep|episode)\b/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
 /**
- * Extracts a stable series/season identity from a file name.
- * Handles `Dead Case SN1 EP2`, `Dead.Case.S01E02`, `Dead Case 1x02`,
- * `Dead Case Season 1 Episode 2` and plain numbered episodes.
+ * Builds a smart folder for every recurring video series. Titles such as
+ * "X-Men.mp4", "X-Men 2.mp4" and "X-Men - The Last Stand.mp4" are grouped
+ * under "X-Men". Music is never included.
  */
-function parseVideoTitle(track: Track): ParsedTitle | null {
-  const normalized = normalizeTitle(track.title);
-  if (!normalized) return null;
+export function buildSeriesGroups(tracks: Track[]): SeriesGroup[] {
+  const buckets = new Map<string, { tokens: string[][]; entries: { trackId: string; title: string }[] }>();
 
-  const seasonEpisode =
-    normalized.match(/\b(?:s|sn|season)\s*0*(\d{1,2})\s*(?:e|ep|episode)\s*0*(\d{1,3})\b/) ??
-    normalized.match(/\b0*(\d{1,2})\s*x\s*0*(\d{1,3})\b/);
-  const onlyEpisode = normalized.match(/\b(?:e|ep|episode)\s*0*(\d{1,3})\b/);
-  const onlySeason =
-    normalized.match(/\b(?:season|sn)\s*0*(\d{1,2})\b/) ?? normalized.match(/\bs\s*0*(\d{1,2})\b/);
+  for (const track of tracks) {
+    if (track.mediaType !== 'video') continue;
 
-  const season = seasonEpisode ? Number(seasonEpisode[1]) : onlySeason ? Number(onlySeason[1]) : null;
-  const episode = seasonEpisode ? Number(seasonEpisode[2]) : onlyEpisode ? Number(onlyEpisode[1]) : null;
+    const tokens = titleTokens(track.title);
+    if (tokens.length === 0 || GENERIC_TOKENS.has(tokens[0])) continue;
 
-  const markers = [seasonEpisode?.[0], onlyEpisode?.[0], onlySeason?.[0]].filter(
-    (value): value is string => Boolean(value),
-  );
-  let seriesName = removeMatches(normalized, markers);
-
-  // With no explicit markers, treat a trailing episode number as part of the episode.
-  if (season === null && episode === null) {
-    const withoutNumber = seriesName.replace(/\b\d{1,3}\b\s*$/, '').trim();
-    if (withoutNumber.length >= 3) seriesName = withoutNumber;
+    const primary = tokens[0];
+    let bucket = buckets.get(primary);
+    if (!bucket) {
+      bucket = { tokens: [], entries: [] };
+      buckets.set(primary, bucket);
+    }
+    bucket.tokens.push(tokens);
+    bucket.entries.push({ trackId: track.id, title: track.title });
   }
 
-  if (seriesName.length < 3) return null;
+  return [...buckets.entries()]
+    .map(([primary, bucket]) => ({ primary, ...bucket }))
+    .filter(({ primary, tokens, entries }) => {
+      const prefix = sharedPrefix(tokens);
+      const exactPrimary = tokens.some((list) => list.length === 1);
+      const distinctivePrimary = primary.length >= 5 && !BROAD_PRIMARIES.has(primary);
+      const strong = prefix.length > 1 || primary.includes('-') || exactPrimary || distinctivePrimary;
+      return entries.length > 1 && prefix.length > 0 && strong;
+    })
+    .map(({ tokens, entries }) => {
+      const prefix = sharedPrefix(tokens);
+      const name = formatName(prefix);
+      const key = prefix.join(' ');
 
-  const slug = slugify(seriesName);
-  if (!slug) return null;
-
-  const displayName = titleCase(seriesName);
-  return {
-    id: `series:${slug}:s${season ?? 0}`,
-    name: season ? `${displayName} Season ${season}` : displayName,
-    season,
-    episode,
-  };
-}
-
-/** Builds the folder groups that should exist for the current video library. */
-export function buildSeriesGroups(tracks: Track[]): SeriesGroup[] {
-  const videos = tracks.filter((track) => track.mediaType === 'video');
-  const groups = new Map<string, { folder: Folder; entries: { trackId: string; episode: number | null; title: string }[] }>();
-
-  for (const track of videos) {
-    const parsed = parseVideoTitle(track);
-    if (!parsed) continue;
-
-    let group = groups.get(parsed.id);
-    if (!group) {
-      group = {
+      return {
         folder: {
-          id: parsed.id,
-          name: parsed.name,
+          id: `series:${key}`,
+          name,
           kind: 'folder',
           smartlistType: 'series',
           mediaType: 'video',
           createdAt: Date.now(),
-        },
-        entries: [],
+        } satisfies Folder,
+        trackIds: entries
+          .sort((a, b) => a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: 'base' }))
+          .map((entry) => entry.trackId),
       };
-      groups.set(parsed.id, group);
-    }
-    group.entries.push({ trackId: track.id, episode: parsed.episode, title: track.title });
-  }
-
-  return [...groups.values()]
-    .filter((group) => group.entries.length >= 2)
-    .map((group) => ({
-      folder: group.folder,
-      trackIds: group.entries
-        .sort((a, b) => (a.episode ?? 0) - (b.episode ?? 0) || a.title.localeCompare(b.title))
-        .map((entry) => entry.trackId),
-    }))
+    })
     .sort((a, b) => a.folder.name.localeCompare(b.folder.name));
 }
 
-/**
- * Reconciles generated series folders with the video library. Safe to call on
+/** Reconciles generated smart folders with the video library. Safe to call on
  * every load: it only writes when the desired folders or memberships change.
  */
 export async function syncSeriesFolders(db: SQLiteDatabase, tracks: Track[]): Promise<void> {

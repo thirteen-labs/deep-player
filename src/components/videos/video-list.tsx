@@ -3,8 +3,10 @@ import { Heart, MediaVideo, Play } from 'iconoir-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { IconButton, MediaArtwork } from '@/components/ui';
+import { CollectionTile, IconButton, MediaArtwork } from '@/components/ui';
+import type { CollectionItem } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
+import { useLayoutStore } from '@/stores/layout-store';
 import type { Track } from '@/lib/db/schema';
 import { formatTime } from '@/utils/format';
 
@@ -15,8 +17,30 @@ type VideoListProps = {
   onFavorite?: (track: Track) => void;
 };
 
-/** Shared video row list used by the Videos tab and video folders. */
+/** Shared video list used by the Videos tab and video folders. */
 export function VideoList({ videos, positions, onPress, onFavorite }: VideoListProps) {
+  const isGrid = useLayoutStore((s) => s.listLayout) === 'grid';
+
+  if (isGrid) {
+    const items: CollectionItem[] = videos.map((track) => ({
+      key: track.id,
+      label: track.title || track.uri,
+      subtitle: videoSubtitle(track, positions[track.id] ?? 0),
+      icon: MediaVideo,
+      artworkUri: track.artworkUri,
+      onPress: () => onPress(track),
+    }));
+
+    return (
+      <FlashList
+        data={items}
+        keyExtractor={(item) => item.key}
+        numColumns={2}
+        renderItem={({ item }) => <CollectionTile item={item} />}
+      />
+    );
+  }
+
   return (
     <FlashList
       data={videos}
@@ -33,6 +57,11 @@ export function VideoList({ videos, positions, onPress, onFavorite }: VideoListP
   );
 }
 
+function videoSubtitle(track: Track, position: number) {
+  const duration = track.durationMs > 0 ? formatTime(track.durationMs / 1000) : '0:00';
+  return position > 10 ? `Resume ${formatTime(position)} · ${duration}` : duration;
+}
+
 function VideoRow({
   track,
   position,
@@ -44,8 +73,7 @@ function VideoRow({
   onPress: () => void;
   onFavorite?: () => void;
 }) {
-  const duration = track.durationMs > 0 ? formatTime(track.durationMs / 1000) : '0:00';
-  const subtitle = position > 10 ? `Resume ${formatTime(position)} · ${duration}` : duration;
+  const subtitle = videoSubtitle(track, position);
 
   return (
     <View style={styles.row}>
@@ -56,10 +84,10 @@ function VideoRow({
         accessibilityLabel={`Play ${track.title}`}>
         <MediaArtwork uri={track.artworkUri} size={44} radius={Spacing.two} fallbackIcon={MediaVideo} />
         <View style={styles.copy}>
-          <ThemedText type="smallBold" numberOfLines={1}>
+          <ThemedText type="label" numberOfLines={1}>
             {track.title || track.uri}
           </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+          <ThemedText type="bodySmall" themeColor="textSecondary" numberOfLines={1}>
             {subtitle}
           </ThemedText>
         </View>

@@ -16,10 +16,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { isPictureInPictureSupported, VideoView, useVideoPlayer } from 'expo-video';
 
+import { ThemeOverrideProvider } from '@/components/theme-override';
 import { ThemedIcon } from '@/components/ui/themed-icon';
 import { ThemedText } from '@/components/themed-text';
 import { IconButton, PressableScale, Scrubber } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
+import { useArtworkPalette } from '@/hooks/use-artwork-palette';
 import { useMediaShortcuts } from '@/hooks/use-media-shortcuts';
 import { useTheme } from '@/hooks/use-theme';
 import { useDbStore } from '@/lib/db/store';
@@ -37,9 +39,11 @@ const VIDEO_SPEEDS = [1, 1.25, 1.5, 2, 0.75, 0.5] as const;
  */
 export default function VideoPlayerScreen() {
   const { id } = useLocalSearchParams();
-  const theme = useTheme();
+  const baseTheme = useTheme();
   const trackId = String(id ?? '');
   const track = useDbStore((s) => s.tracks.find((t) => t.id === trackId));
+  const artworkPalette = useArtworkPalette(track?.artworkUri);
+  const theme = artworkPalette ?? baseTheme;
   const setPlaybackPosition = useDbStore((s) => s.setPlaybackPosition);
   const recordPlayback = useDbStore((s) => s.recordPlayback);
 
@@ -261,8 +265,9 @@ export default function VideoPlayerScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={[styles.stage, { backgroundColor: theme.background }]}>
+    <ThemeOverrideProvider theme={theme}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={[styles.stage, { backgroundColor: theme.background }]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Toggle player controls"
@@ -288,7 +293,7 @@ export default function VideoPlayerScreen() {
           <View
             style={[styles.statusBadge, { backgroundColor: withAlpha(theme.background, 0.78) }]}
             pointerEvents="none">
-            <ThemedText type="small" style={{ color: theme.text }}>
+            <ThemedText type="bodySmall" style={{ color: theme.text }}>
               {statusMessage}
             </ThemedText>
           </View>
@@ -313,10 +318,10 @@ export default function VideoPlayerScreen() {
                 onPress={() => router.back()}
               />
               <View style={styles.titleCopy}>
-                <ThemedText type="smallBold" numberOfLines={1} style={{ color: theme.text }}>
+                <ThemedText type="label" numberOfLines={1} style={{ color: theme.text }}>
                   {track?.title || 'Video'}
                 </ThemedText>
-                <ThemedText type="small" numberOfLines={1} style={{ color: theme.textSecondary }}>
+                <ThemedText type="bodySmall" numberOfLines={1} style={{ color: theme.textSecondary }}>
                   {track?.artist || ''}
                 </ThemedText>
               </View>
@@ -377,7 +382,7 @@ export default function VideoPlayerScreen() {
                   accessibilityLabel={`Playback speed ${speed}×`}
                   onPress={cycleSpeed}
                   style={[styles.speedButton, glassStyle]}>
-                  <ThemedText type="smallBold" style={{ color: theme.text }}>
+                  <ThemedText type="label" style={{ color: theme.text }}>
                     {speed}×
                   </ThemedText>
                 </PressableScale>
@@ -392,9 +397,10 @@ export default function VideoPlayerScreen() {
               </View>
             </View>
           </View>
-        ) : null}
+          ) : null}
+        </View>
       </View>
-    </View>
+    </ThemeOverrideProvider>
   );
 }
 

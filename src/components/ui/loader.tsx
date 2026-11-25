@@ -94,7 +94,7 @@ export function Loader({
         />
       </View>
       {label ? (
-        <ThemedText type="small" themeColor="textSecondary" style={styles.label}>
+        <ThemedText type="bodySmall" themeColor="textSecondary" style={styles.label}>
           {label}
         </ThemedText>
       ) : null}
@@ -123,7 +123,7 @@ export function LoadingOverlay({
       pointerEvents="auto"
       accessibilityLiveRegion="polite"
       accessibilityLabel={label}
-      style={[StyleSheet.absoluteFill, styles.overlay, { backgroundColor: theme.glassBackground }, style]}>
+      style={[StyleSheet.absoluteFill, styles.overlay, { backgroundColor: theme.overlay }, style]}>
       <Loader size={56} label={label} />
     </View>
   );

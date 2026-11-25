@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ComponentRef } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import { InfoRow } from '@/components/ui/info-row';
 import {
@@ -48,21 +49,33 @@ export function SortSheetHost() {
   };
 
   return (
-    <AppBottomSheet
-      ref={sheetRef}
-      title={isUniversal ? 'Sort by' : 'Sort smart lists'}
-      snapPoints={['45%', '80%']}
-      index={-1}
-      onClose={closeSheet}>
-      {options.map((option) => (
-        <InfoRow
-          key={option.value}
-          label={option.label}
-          value={option.value === value ? '✓' : undefined}
-          valueColor="tint"
-          onPress={() => handleSelect(option.value)}
-        />
-      ))}
-    </AppBottomSheet>
+    <View pointerEvents="box-none" style={styles.overlay}>
+      <AppBottomSheet
+        ref={sheetRef}
+        title={isUniversal ? 'Sort by' : 'Sort smart lists'}
+        index={-1}
+        onClose={closeSheet}>
+        {options.map((option) => (
+          <InfoRow
+            key={option.value}
+            label={option.label}
+            value={option.value === value ? '✓' : undefined}
+            valueColor="tint"
+            onPress={() => handleSelect(option.value)}
+          />
+        ))}
+      </AppBottomSheet>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 20,
+  },
+});

@@ -19,11 +19,11 @@ export function EmptyState({ message, description, icon, action }: EmptyStatePro
   return (
     <View style={styles.container}>
       {icon ? <ThemedIcon icon={icon} size={36} color="textSecondary" strokeWidth={1.5} /> : null}
-      <ThemedText type="smallBold" style={styles.message}>
+      <ThemedText type="label" style={styles.message}>
         {message}
       </ThemedText>
       {description ? (
-        <ThemedText type="small" themeColor="textSecondary" style={styles.description}>
+        <ThemedText type="bodySmall" themeColor="textSecondary" style={styles.description}>
           {description}
         </ThemedText>
       ) : null}

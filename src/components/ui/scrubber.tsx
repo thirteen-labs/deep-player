@@ -75,14 +75,14 @@ export function Scrubber({
         {showTimes ? (
           <View style={styles.times}>
             <ThemedText
-              type="small"
+              type="numeric"
               themeColor="textSecondary"
               style={overlay && { color: theme.text }}
               selectable>
               {formatTime(currentTime)}
             </ThemedText>
             <ThemedText
-              type="small"
+              type="numeric"
               themeColor="textSecondary"
               style={overlay && { color: theme.text }}
               selectable>

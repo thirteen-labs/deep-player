@@ -59,10 +59,10 @@ export function NowPlayingCard() {
           >
             <MediaArtwork uri={track.artworkUri} size={54} radius={Spacing.two} />
             <View style={styles.copy}>
-              <ThemedText type="smallBold" numberOfLines={1}>
+              <ThemedText type="label" numberOfLines={1}>
                 {track.title || track.uri}
               </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+              <ThemedText type="bodySmall" themeColor="textSecondary" numberOfLines={1}>
                 {track.artist || 'Unknown artist'}
               </ThemedText>
             </View>

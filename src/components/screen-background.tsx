@@ -14,9 +14,10 @@ type Props = PropsWithChildren<{
 
 export function ScreenBackground({ children, style, backdropBlur }: Props) {
   const theme = useTheme();
+  const background = theme.playerBackground ?? theme.background;
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }, style]}>
+    <View style={[styles.container, { backgroundColor: background }, style]}>
       {theme.backgroundImage ? (
         <Image
           source={{ uri: theme.backgroundImage }}
@@ -32,16 +33,16 @@ export function ScreenBackground({ children, style, backdropBlur }: Props) {
           theme.backgroundImage
             ? theme.isDark
               ? [
-                  withAlpha(theme.background, 0.15),
-                  withAlpha(theme.background, 0.35),
-                  withAlpha(theme.background, 0.8),
+                  withAlpha(background, 0.15),
+                  withAlpha(background, 0.35),
+                  withAlpha(background, 0.8),
                 ]
               : [
-                  withAlpha(theme.background, 0.1),
-                  withAlpha(theme.background, 0.25),
-                  withAlpha(theme.background, 0.85),
+                  withAlpha(background, 0.1),
+                  withAlpha(background, 0.25),
+                  withAlpha(background, 0.85),
                 ]
-            : [theme.backgroundElement, theme.background]
+            : [theme.surface, background]
         }
         locations={theme.backgroundImage ? [0, 0.45, 1] : [0, 0.7]}
         style={StyleSheet.absoluteFill}

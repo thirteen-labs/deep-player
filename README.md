@@ -5,15 +5,17 @@ Deep Player is a local-first music and video player for iOS, Android, and web. I
 ## Features
 
 - **Library scanning** — imports audio and video from the device media library into SQLite
-- **Tabs** — Home, Folders, Music, Videos, and User (native tabs on iOS/Android, custom tab bar on web)
+- **Tabs** — Folders, Music, Videos, and User (native tabs on iOS/Android, custom tab bar on web)
+- **Continue watching** — bottom-right button resumes the most recent unfinished video
 - **Music playback** — shared `expo-audio` engine, compact now-playing bar and full-screen player with lock-screen controls, background playback, queue, repeat, shuffle, speed, and volume
+- **Universal search** — top-bar search opens one page that finds songs, videos, artists, albums, playlists and folders
 - **Browsing** — search, artists, albums, track lists, folders, and video smartlists (FlashList-backed)
 - **Playlists** — create, rename, delete, and reorder collections; add tracks from any list
 - **Favorites and history** — favorite tracks and recently played items
 - **Queue** — play next, add to queue, and remove from queue
 - **Videos** — video library and immersive `expo-video` player with auto-hiding controls, ±10s seek, speed, fullscreen, Picture-in-Picture and background playback
 - **Offline playback** — downloads tracks and artwork to the app document directory and persists local URIs
-- **Theming and permissions** — Iconoir icons, palette-adaptive screens and overlays, theme picker, media-library and notification permission controls, file picker
+- **Theming and permissions** — Iconoir icons, palette-adaptive screens and overlays, theme picker, flex/grid list layout setting, media-library and notification permission controls, file picker
 - **App icons** — runtime picker with 8 optional icons on iOS and Android
 - **CI** — lint, typecheck, and release APK build via GitHub Actions
 

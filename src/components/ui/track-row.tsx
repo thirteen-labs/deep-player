@@ -75,11 +75,11 @@ export function TrackRow({
           <MediaArtwork uri={track.artworkUri} size={44} radius={Spacing.two} fallbackIcon={MusicIcon} />
         )}
         <View style={styles.copy}>
-          <ThemedText type="smallBold" numberOfLines={1} themeColor={active ? 'tint' : 'text'}>
+          <ThemedText type="label" numberOfLines={1} themeColor={active ? 'tint' : 'text'}>
             {index != null ? `${index + 1}. ` : ''}
             {track.title || track.uri}
           </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+          <ThemedText type="bodySmall" themeColor="textSecondary" numberOfLines={1}>
             {subtitle}
           </ThemedText>
         </View>
