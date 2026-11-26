@@ -1,5 +1,13 @@
-import { PropsWithChildren, type ReactNode } from 'react';
-import { ScrollView, StyleSheet, useWindowDimensions, View, type StyleProp, type ViewStyle } from 'react-native';
+import { type PropsWithChildren, type ReactNode, type RefObject } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+  type ScrollViewInstance,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
 import { ScreenBackground } from '@/components/screen-background';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -15,9 +23,13 @@ type ScreenProps = PropsWithChildren<{
   headerAction?: ReactNode;
   /** Replace the automatic header entirely. */
   header?: ReactNode;
+  /** Use the device's full width with a minimal (< 8px) outer padding. */
+  fullWidth?: boolean;
   contentContainerStyle?: StyleProp<ViewStyle>;
   pageStyle?: StyleProp<ViewStyle>;
   style?: StyleProp<ViewStyle>;
+  /** Ref used by settings screens to scroll to a focused control. */
+  scrollRef?: RefObject<ScrollViewInstance | null>;
 }>;
 
 /** Scrollable screen shell: themed background, safe-area padding, centered page. */
@@ -27,9 +39,11 @@ export function Screen({
   headerAction,
   header,
   children,
+  fullWidth = false,
   contentContainerStyle,
   pageStyle,
   style,
+  scrollRef,
 }: ScreenProps) {
   const bottomInset = useScreenBottomInset();
   const { width } = useWindowDimensions();
@@ -38,14 +52,18 @@ export function Screen({
   return (
     <ScreenBackground style={style}>
       <ScrollView
+        ref={scrollRef}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: bottomInset, paddingHorizontal: compact ? Spacing.three : Spacing.four },
+          {
+            paddingBottom: bottomInset,
+            paddingHorizontal: fullWidth ? Spacing.one : compact ? Spacing.three : Spacing.four,
+          },
           contentContainerStyle,
         ]}
         showsVerticalScrollIndicator={false}>
-        <View style={[styles.page, pageStyle]}>
+        <View style={[styles.page, fullWidth && styles.fullWidthPage, pageStyle]}>
           {header ??
             (title ? (
               <ScreenHeader title={title} description={description} action={headerAction} />
@@ -66,5 +84,8 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     gap: Spacing.four,
+  },
+  fullWidthPage: {
+    maxWidth: '100%',
   },
 });

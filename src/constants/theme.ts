@@ -86,6 +86,56 @@ export const Themes = Object.fromEntries(
 
 export const THEME_NAMES = THEME_CONFIG.themes.map((theme) => theme.id) as ThemeName[];
 
+/** Forces maximum foreground/background contrast without changing theme identity. */
+export function withHighContrast(theme: ThemePalette): ThemePalette {
+  if (theme.isDark) {
+    return {
+      ...theme,
+      background: '#000000',
+      surface: '#0A0A0A',
+      surfaceElevated: '#161616',
+      backgroundElement: '#0A0A0A',
+      backgroundSelected: '#161616',
+      playerBackground: '#000000',
+      tabBarBackground: '#000000',
+      text: '#FFFFFF',
+      textPrimary: '#FFFFFF',
+      textSecondary: '#F2F2F2',
+      primary: '#FFFFFF',
+      secondary: '#FFFFFF',
+      tint: '#FFFFFF',
+      accent: '#FFFFFF',
+      border: '#FFFFFF',
+      glassBackground: 'rgba(0, 0, 0, 0.92)',
+      glassBorder: '#FFFFFF',
+      overlay: 'rgba(0, 0, 0, 0.9)',
+      statusBarStyle: 'light',
+    };
+  }
+  return {
+    ...theme,
+    background: '#FFFFFF',
+    surface: '#F4F4F4',
+    surfaceElevated: '#E6E6E6',
+    backgroundElement: '#F4F4F4',
+    backgroundSelected: '#E6E6E6',
+    playerBackground: '#FFFFFF',
+    tabBarBackground: '#FFFFFF',
+    text: '#000000',
+    textPrimary: '#000000',
+    textSecondary: '#1A1A1A',
+    primary: '#000000',
+    secondary: '#000000',
+    tint: '#000000',
+    accent: '#000000',
+    border: '#000000',
+    glassBackground: 'rgba(255, 255, 255, 0.94)',
+    glassBorder: '#000000',
+    overlay: 'rgba(255, 255, 255, 0.9)',
+    statusBarStyle: 'dark',
+  };
+}
+
 /** Keys usable as ThemedText/ThemedView color props. */
 export type ThemeColor =
   | 'text'

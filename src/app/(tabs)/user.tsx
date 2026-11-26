@@ -19,10 +19,10 @@ import { StyleSheet, View } from 'react-native';
 import { SettingsTile } from '@/components/settings/settings-tile';
 import {
   InfoRow,
+  ProfileTopBar,
   Screen,
   SectionCard,
   ThemedIcon,
-  TopBar,
   type AppIcon,
 } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
@@ -49,7 +49,7 @@ function Chevron() {
 
 export default function UserScreen() {
   return (
-    <Screen header={<TopBar title="Settings" showNotifications />}>
+    <Screen header={<ProfileTopBar />}>
       <SectionCard
         title="Quick access"
         icon={Sparks}
@@ -80,18 +80,25 @@ export default function UserScreen() {
         headerDivider
         gap={Spacing.two + Spacing.one}>
         <InfoRow
+          label="All settings"
+          icon={Settings}
+          iconSize={IconSize.lg}
+          value={<Chevron />}
+          onPress={() => router.push('/settings' as never)}
+        />
+        <InfoRow
           label="Appearance"
           icon={Palette}
           iconSize={IconSize.lg}
           value={<Chevron />}
-          onPress={() => router.push('/settings/appearance')}
+          onPress={() => router.push('/settings/appearance/themes')}
         />
         <InfoRow
           label="Music"
           icon={MusicDoubleNote}
           iconSize={IconSize.lg}
           value={<Chevron />}
-          onPress={() => router.push('/settings/music')}
+          onPress={() => router.push('/settings/audio' as never)}
         />
         <InfoRow
           label="Video"
@@ -99,6 +106,13 @@ export default function UserScreen() {
           iconSize={IconSize.lg}
           value={<Chevron />}
           onPress={() => router.push('/settings/video')}
+        />
+        <InfoRow
+          label="Library & permissions"
+          icon={Settings}
+          iconSize={IconSize.lg}
+          value={<Chevron />}
+          onPress={() => router.push('/settings/legacy/music')}
         />
       </SectionCard>
 

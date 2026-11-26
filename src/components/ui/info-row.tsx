@@ -78,6 +78,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Spacing.three,
     paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.half,
+    marginBottom: Spacing.one,
     borderRadius: Spacing.two,
     borderCurve: 'continuous',
   },

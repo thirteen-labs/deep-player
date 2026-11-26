@@ -6,7 +6,10 @@ import {
   type TabListProps,
   type TabTriggerSlotProps,
 } from 'expo-router/ui';
-import { Folder, MediaVideo, MusicDoubleNote, User } from 'iconoir-react-native';
+import { FolderIcon } from '@solar-icons/react-native/linear/folder';
+import { MusicNoteIcon } from '@solar-icons/react-native/linear/music-note';
+import { UserIcon } from '@solar-icons/react-native/linear/user';
+import { VideoLibraryIcon } from '@solar-icons/react-native/linear/video-library';
 import { type Ref } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,17 +21,19 @@ import { useTheme } from '@/hooks/use-theme';
 import { withAlpha } from '@/utils/color';
 
 const TABS = [
-  { name: 'folders', href: '/folders', label: 'Folders', icon: Folder },
-  { name: 'music', href: '/music', label: 'Music', icon: MusicDoubleNote },
-  { name: 'videos', href: '/videos', label: 'Videos', icon: MediaVideo },
-  { name: 'user', href: '/user', label: 'Profile', icon: User },
+  { name: 'folders', href: '/folders', label: 'Folders', icon: FolderIcon },
+  { name: 'music', href: '/music', label: 'Music', icon: MusicNoteIcon },
+  { name: 'videos', href: '/videos', label: 'Videos', icon: VideoLibraryIcon },
+  { name: 'user', href: '/user', label: 'Settings', icon: UserIcon },
 ] as const;
 
 /** Custom tab navigator with a floating, frosted, fully rounded tab bar. */
 export default function FloatingTabs() {
   return (
     <Tabs style={styles.root}>
-      <TabSlot style={styles.slot} />
+      {/* Keep visited screens attached: detaching them on every tab change
+          reattaches large list views and makes switching feel slow. */}
+      <TabSlot style={styles.slot} detachInactiveScreens={false} />
       <TabList asChild>
         <FloatingTabList>
           {TABS.map((tab) => (

@@ -5,12 +5,14 @@ import { StyleSheet, View } from 'react-native';
 import Animated, { Easing, Keyframe } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import { useMotionEnabled } from '@/features/settings/hooks/use-motion';
 import { useTheme } from '@/hooks/use-theme';
 
 const DURATION = 600;
 
 export function AnimatedSplashOverlay() {
   const theme = useTheme();
+  const motionEnabled = useMotionEnabled();
   const [animate, setAnimate] = useState(false);
   const [visible, setVisible] = useState(true);
 
@@ -36,6 +38,18 @@ export function AnimatedSplashOverlay() {
   });
 
   const image = <Image style={styles.image} source={require('@/assets/images/splash.png')} />;
+
+  if (!motionEnabled) {
+    return (
+      <View
+        onLayout={() => {
+          SplashScreen.hideAsync().finally(() => setVisible(false));
+        }}
+        style={[styles.splashOverlay, { backgroundColor: theme.tint }]}>
+        {image}
+      </View>
+    );
+  }
 
   return animate ? (
     <Animated.View

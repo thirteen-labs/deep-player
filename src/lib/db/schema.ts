@@ -24,6 +24,8 @@ export type Track = {
   albumArtist: string;
   genre: string;
   durationMs: number;
+  /** File size in bytes, when the media store exposes it. */
+  size: number;
   mimeType: string | null;
   uri: string;
   artworkUri: string | null;
@@ -32,6 +34,8 @@ export type Track = {
   favorite: boolean;
   mediaType: FolderMediaType;
   addedAt: number;
+  /** Hidden / blacklisted tracks are kept in the DB but excluded from library lists. */
+  hidden: boolean;
 };
 
 export type PlaybackPosition = {
@@ -85,12 +89,14 @@ const SCHEMA_SQL = `
     albumArtist TEXT NOT NULL DEFAULT '',
     genre TEXT NOT NULL DEFAULT '',
     durationMs REAL NOT NULL DEFAULT 0,
+    size INTEGER NOT NULL DEFAULT 0,
     mimeType TEXT,
     uri TEXT NOT NULL DEFAULT '',
     artworkUri TEXT,
     favorite INTEGER NOT NULL DEFAULT 0,
     mediaType TEXT NOT NULL DEFAULT 'music',
-    addedAt INTEGER NOT NULL DEFAULT 0
+    addedAt INTEGER NOT NULL DEFAULT 0,
+    hidden INTEGER NOT NULL DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS playbackState (
@@ -134,6 +140,12 @@ export function getDb(): Promise<SQLiteDatabase> {
     const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(tracks)');
     if (!columns.some((c) => c.name === 'localUri')) {
       await db.execAsync('ALTER TABLE tracks ADD COLUMN localUri TEXT');
+    }
+    if (!columns.some((c) => c.name === 'size')) {
+      await db.execAsync('ALTER TABLE tracks ADD COLUMN size INTEGER NOT NULL DEFAULT 0');
+    }
+    if (!columns.some((c) => c.name === 'hidden')) {
+      await db.execAsync('ALTER TABLE tracks ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0');
     }
     return db;
   })();

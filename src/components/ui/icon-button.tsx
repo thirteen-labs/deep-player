@@ -1,6 +1,7 @@
 import type { AppIcon } from './themed-icon';
 import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
+import { useLargeControls } from '@/features/settings/hooks/use-accessibility';
 import { useTheme } from '@/hooks/use-theme';
 
 import { PressableScale } from './pressable-scale';
@@ -35,6 +36,8 @@ export function IconButton({
   style,
 }: IconButtonProps) {
   const theme = useTheme();
+  const largeControls = useLargeControls();
+  const effectiveSize = largeControls ? Math.max(size, 56) : size;
   const background =
     variant === 'primary'
       ? theme.tint
@@ -53,15 +56,15 @@ export function IconButton({
       style={[
         styles.base,
         {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
+          width: effectiveSize,
+          height: effectiveSize,
+          borderRadius: effectiveSize / 2,
           backgroundColor: background,
           opacity: disabled ? 0.5 : 1,
         },
         style,
       ]}>
-      <ThemedIcon icon={icon} size={iconSize ?? Math.round(size * 0.5)} color={color} />
+      <ThemedIcon icon={icon} size={iconSize ?? Math.round(effectiveSize * 0.5)} color={color} />
     </PressableScale>
   );
 }

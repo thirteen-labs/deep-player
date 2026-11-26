@@ -15,6 +15,7 @@ export * from './name-prompt-modal';
 export * from './now-playing-card';
 export * from './permission-status-row';
 export * from './pressable-scale';
+export * from './profile-top-bar';
 export * from './screen';
 export * from './screen-header';
 export * from './scrubber';

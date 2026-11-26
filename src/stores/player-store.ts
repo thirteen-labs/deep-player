@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { create } from 'zustand';
-import type { AudioPlayer, AudioStatus } from 'expo-audio';
+import { preload, type AudioPlayer, type AudioStatus } from 'expo-audio';
 
 import { useAppAudio } from '@/lib/audio/player';
 import { useDbStore } from '@/lib/db/store';
@@ -11,6 +11,63 @@ export type ShuffleMode = 'off' | 'on';
 
 /** Playback rates offered by both player UIs (Android caps expo-audio at 2x). */
 export const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
+
+/** Durations (minutes) offered by the sleep timer. */
+export const SLEEP_TIMER_MINUTES = [5, 10, 15, 30, 45, 60] as const;
+
+export type SleepTimer =
+  | { kind: 'duration'; minutes: number }
+  /** Pauses when the current track finishes instead of advancing. */
+  | { kind: 'track' };
+
+/** Behavioral preferences supplied by the settings module (never persisted twice). */
+export interface PlaybackPreferences {
+  autoPlayNext: boolean;
+  rememberPosition: boolean;
+  resumeBehavior: 'always' | 'ask' | 'never';
+  autoStopAfterCurrent: boolean;
+  sleepTimerDefault: number;
+  playbackHistory: boolean;
+  preloadNextMedia: boolean;
+  notificationControls: boolean;
+  /** Remove the lock-screen notification when playback stops. */
+  removeNotificationOnStop: boolean;
+  notificationOptions: {
+    showArtwork: boolean;
+    showControls: boolean;
+    showProgress: boolean;
+  };
+}
+
+export const DEFAULT_PLAYBACK_PREFERENCES: PlaybackPreferences = {
+  autoPlayNext: true,
+  rememberPosition: true,
+  resumeBehavior: 'always',
+  autoStopAfterCurrent: false,
+  sleepTimerDefault: 0,
+  playbackHistory: true,
+  preloadNextMedia: true,
+  notificationControls: true,
+  removeNotificationOnStop: true,
+  notificationOptions: { showArtwork: true, showControls: true, showProgress: true },
+};
+
+/** Registered by the settings runtime so store code stays UI-independent. */
+type ResumePromptHandler = (track: Track, seconds: number) => Promise<boolean>;
+let resumePromptHandler: ResumePromptHandler | null = null;
+
+export function registerResumePrompt(handler: ResumePromptHandler | null): void {
+  resumePromptHandler = handler;
+}
+
+let sleepTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function clearSleepTimeout() {
+  if (sleepTimeout) {
+    clearTimeout(sleepTimeout);
+    sleepTimeout = null;
+  }
+}
 
 let lastTrackId: string | null = null;
 
@@ -63,6 +120,12 @@ export type PlayerStore = {
   speed: number;
   repeatMode: RepeatMode;
   shuffleMode: ShuffleMode;
+  /** Active sleep timer, or null when playback should run normally. */
+  sleepTimer: SleepTimer | null;
+  /** Live preferences mirrored from the settings store. */
+  preferences: PlaybackPreferences;
+  /** Track waiting for a "resume where you left off?" decision. */
+  pendingResume: { track: Track; seconds: number } | null;
   /** Queue of tracks for auto-advance; empty until a queue is set. */
   queue: Track[];
   queueIndex: number;
@@ -91,10 +154,63 @@ export type PlayerStore = {
   clearQueue: () => void;
   toggleRepeat: () => void;
   toggleShuffle: () => void;
+  /** Starts, replaces or clears the sleep timer. */
+  setSleepTimer: (timer: SleepTimer | null) => void;
+  /** Called by the settings bridge whenever a playback preference changes. */
+  setPlaybackPreferences: (preferences: Partial<PlaybackPreferences>) => void;
+  /** Resolves a pending resume prompt. */
+  confirmResume: (resume: boolean) => void;
   syncStatus: (status: AudioStatus) => void;
 }
 
-export const usePlayerStore = create<PlayerStore>((set, get) => ({
+export const usePlayerStore = create<PlayerStore>((set, get) => {
+  /** Applies notification preferences to the shared expo-audio player. */
+  const activateLockScreen = (track: Track | null) => {
+    const { audioPlayer, preferences } = get();
+    if (!track || !audioPlayer || !preferences.notificationControls) return;
+    const { showArtwork, showControls, showProgress } = preferences.notificationOptions;
+    audioPlayer.setActiveForLockScreen(
+      true,
+      {
+        title: track.title || 'Track',
+        artist: track.artist || 'Unknown artist',
+        albumTitle: track.album || undefined,
+        artworkUrl: showArtwork ? (track.artworkUri ?? undefined) : undefined,
+      },
+      {
+        showNextTrack: showControls,
+        showPreviousTrack: showControls,
+        showSeekBackward: showControls,
+        showSeekForward: showControls,
+        isLiveStream: !showProgress,
+      },
+    );
+  };
+
+  const deactivateLockScreenOnStop = () => {
+    if (get().preferences.removeNotificationOnStop) {
+      get().audioPlayer?.setActiveForLockScreen(false);
+    }
+  };
+
+  const preloadUpcoming = () => {
+    const state = get();
+    if (!state.preferences.preloadNextMedia) return;
+    const upcoming =
+      state.queue[state.queueIndex + 1] ??
+      (state.repeatMode === 'all' ? state.queue[0] : undefined);
+    if (!upcoming) return;
+    // The web implementation returns void; Promise.resolve covers both platforms.
+    void Promise.resolve(preload(upcoming.localUri ?? upcoming.uri)).catch(() => undefined);
+  };
+
+  const recordHistory = (trackId: string) => {
+    if (get().preferences.playbackHistory) {
+      void useDbStore.getState().recordPlayback(trackId);
+    }
+  };
+
+  return {
   track: null,
   isPlaying: false,
   currentTime: 0,
@@ -104,6 +220,9 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   speed: 1,
   repeatMode: 'off',
   shuffleMode: 'off',
+  sleepTimer: null,
+  preferences: { ...DEFAULT_PLAYBACK_PREFERENCES, notificationOptions: { ...DEFAULT_PLAYBACK_PREFERENCES.notificationOptions } },
+  pendingResume: null,
   queue: [],
   queueIndex: -1,
   audioPlayer: null,
@@ -145,12 +264,13 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 
   setLockScreenMetadata: (track) => {
     const { audioPlayer } = get();
-    if (!track || !audioPlayer) return;
+    if (!track || !audioPlayer || !get().preferences.notificationControls) return;
+    const { showArtwork } = get().preferences.notificationOptions;
     audioPlayer.updateLockScreenMetadata({
       title: track.title || 'Track',
       artist: track.artist || 'Unknown artist',
       albumTitle: track.album || undefined,
-      artworkUrl: track.artworkUri ?? undefined,
+      artworkUrl: showArtwork ? (track.artworkUri ?? undefined) : undefined,
     });
   },
 
@@ -191,7 +311,17 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 
     // Advance when a track finishes; "repeat one" replays it instead of skipping.
     if (status.didJustFinish && state.track && state.finishSignal === 0) {
-      if (state.repeatMode === 'one') {
+      if (
+        state.sleepTimer?.kind === 'track' ||
+        state.preferences.autoStopAfterCurrent ||
+        !state.preferences.autoPlayNext
+      ) {
+        // Sleep timer / auto-stop / "autoplay next" off: stop at track end.
+        set({ finishSignal: 1, isPlaying: false });
+        if (state.sleepTimer?.kind === 'track') set({ sleepTimer: null });
+        state.audioPlayer?.pause();
+        deactivateLockScreenOnStop();
+      } else if (state.repeatMode === 'one') {
         void state.audioPlayer?.seekTo(0);
         state.audioPlayer?.play();
         set({ currentTime: 0, isPlaying: true, finishSignal: 1 });
@@ -205,27 +335,59 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   },
 
   play: (track) => {
-    const { audioPlayer } = get();
+    const { audioPlayer, preferences } = get();
     const durationSeconds = track.durationMs / 1000;
-    const saved = useDbStore.getState().playbackPositions[track.id] ?? 0;
-    const canResume = saved > 5 && (durationSeconds <= 0 || saved < durationSeconds - 10);
-    const resumeAt = canResume ? saved : 0;
+    const saved = preferences.rememberPosition
+      ? (useDbStore.getState().playbackPositions[track.id] ?? 0)
+      : 0;
+    const resumable = saved > 5 && (durationSeconds <= 0 || saved < durationSeconds - 10);
+    const canResume = preferences.resumeBehavior !== 'never' && resumable;
+    const askResume = canResume && preferences.resumeBehavior === 'ask';
+    const resumeAt = canResume && !askResume ? saved : 0;
+
     lastPersisted = { trackId: track.id, seconds: resumeAt };
     resumeGuard = resumeAt > 0 ? { trackId: track.id, target: resumeAt } : null;
 
-    set({ track, isPlaying: true, currentTime: resumeAt, duration: durationSeconds });
-    audioPlayer?.setActiveForLockScreen(true, {
-      title: track.title || 'Track',
-      artist: track.artist || 'Unknown artist',
-      albumTitle: track.album || undefined,
-      artworkUrl: track.artworkUri ?? undefined,
+    set({
+      track,
+      isPlaying: !askResume,
+      currentTime: resumeAt,
+      duration: durationSeconds,
+      pendingResume: askResume ? { track, seconds: saved } : null,
     });
+    activateLockScreen(track);
+    preloadUpcoming();
     audioPlayer?.replace(track.localUri ?? track.uri);
-    if (resumeAt > 0) {
-      void audioPlayer?.seekTo(resumeAt);
+    if (resumeAt > 0) void audioPlayer?.seekTo(resumeAt);
+
+    if (askResume) {
+      // Wait for the registered prompt before starting playback.
+      audioPlayer?.pause();
+      const prompt = resumePromptHandler ?? (async () => true);
+      void prompt(track, saved)
+        .then((resume) => get().confirmResume(resume))
+        .catch(() => get().confirmResume(true));
+      return;
     }
+
     audioPlayer?.play();
-    void useDbStore.getState().recordPlayback(track.id);
+    recordHistory(track.id);
+  },
+
+  confirmResume: (resume) => {
+    const pending = get().pendingResume;
+    if (!pending) return;
+    const target = resume ? pending.seconds : 0;
+    lastPersisted = { trackId: pending.track.id, seconds: target };
+    if (resume) get().seekTo(target);
+    else {
+      resumeGuard = null;
+      set({ currentTime: 0 });
+      void get().audioPlayer?.seekTo(0);
+    }
+    set({ pendingResume: null, isPlaying: true });
+    get().audioPlayer?.play();
+    recordHistory(pending.track.id);
   },
 
   playAt: (index) => {
@@ -241,6 +403,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     persistProgress(track?.id, currentTime, true);
     set({ isPlaying: false });
     audioPlayer?.pause();
+    deactivateLockScreenOnStop();
   },
 
   togglePlay: () => {
@@ -249,8 +412,10 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
       persistProgress(track?.id, currentTime, true);
       set({ isPlaying: false });
       audioPlayer?.pause();
+      deactivateLockScreenOnStop();
     } else {
       set({ isPlaying: true });
+      activateLockScreen(track);
       audioPlayer?.play();
     }
   },
@@ -278,15 +443,11 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
         currentTime: 0,
         duration: target.durationMs / 1000,
       });
-      audioPlayer?.setActiveForLockScreen(true, {
-        title: target.title || 'Track',
-        artist: target.artist || 'Unknown artist',
-        albumTitle: target.album || undefined,
-        artworkUrl: target.artworkUri ?? undefined,
-      });
+      activateLockScreen(target);
+      preloadUpcoming();
       audioPlayer?.replace(target.localUri ?? target.uri);
       audioPlayer?.play();
-      void useDbStore.getState().recordPlayback(target.id);
+      recordHistory(target.id);
     } else if (repeatMode === 'one') {
       audioPlayer?.seekTo(0);
       audioPlayer?.play();
@@ -317,15 +478,11 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
         currentTime: 0,
         duration: target.durationMs / 1000,
       });
-      audioPlayer?.setActiveForLockScreen(true, {
-        title: target.title || 'Track',
-        artist: target.artist || 'Unknown artist',
-        albumTitle: target.album || undefined,
-        artworkUrl: target.artworkUri ?? undefined,
-      });
+      activateLockScreen(target);
+      preloadUpcoming();
       audioPlayer?.replace(target.localUri ?? target.uri);
       audioPlayer?.play();
-      void useDbStore.getState().recordPlayback(target.id);
+      recordHistory(target.id);
     } else {
       audioPlayer?.seekTo(0);
       set({ currentTime: 0 });
@@ -346,12 +503,14 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     const { shuffleMode } = get();
     if (shuffleMode !== 'on' || tracks.length < 2) {
       set({ queue: tracks, queueIndex: index });
+      preloadUpcoming();
       return;
     }
     // Keep the requested track first, shuffle everything after it.
     const selected = tracks[index] ?? tracks[0];
     const rest = shuffled(tracks.filter((_, i) => i !== index));
     set({ queue: [selected, ...rest], queueIndex: 0 });
+    preloadUpcoming();
   },
 
   playNext: (track) => {
@@ -439,6 +598,21 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
       repeatMode: state.repeatMode === 'off' ? 'one' : state.repeatMode === 'one' ? 'all' : 'off',
     })),
 
+  setSleepTimer: (timer) => {
+    clearSleepTimeout();
+    if (timer?.kind === 'duration') {
+      sleepTimeout = setTimeout(
+        () => {
+          sleepTimeout = null;
+          set({ sleepTimer: null });
+          get().pause();
+        },
+        Math.max(0, timer.minutes) * 60_000,
+      );
+    }
+    set({ sleepTimer: timer });
+  },
+
   toggleShuffle: () => {
     const { shuffleMode, queue, queueIndex, track } = get();
     const next: ShuffleMode = shuffleMode === 'off' ? 'on' : 'off';
@@ -452,8 +626,29 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     );
     const reordered = playing ? [playing, ...remaining] : remaining;
     set({ shuffleMode: next, queue: reordered, queueIndex: playing ? 0 : -1 });
+    preloadUpcoming();
   },
-}));
+
+  setPlaybackPreferences: (preferences) => {
+    const previous = get().preferences;
+    const next: PlaybackPreferences = {
+      ...previous,
+      ...preferences,
+      notificationOptions: {
+        ...previous.notificationOptions,
+        ...preferences.notificationOptions,
+      },
+    };
+    set({ preferences: next });
+    if (!previous.preloadNextMedia && next.preloadNextMedia) preloadUpcoming();
+    if (!next.notificationControls) {
+      get().audioPlayer?.setActiveForLockScreen(false);
+    } else if (get().track) {
+      activateLockScreen(get().track);
+    }
+  },
+  };
+});
 
 /** The global player facade: zustand state + the shared `expo-audio` engine. */
 export function usePlayer() {

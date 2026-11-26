@@ -18,16 +18,31 @@ export const SMART_LIST_SORT_OPTIONS: SortOption<SmartListSort>[] = [
   { value: 'type', label: 'Type' },
 ];
 
+/** Compact options for the Music tab's dedicated sort bar. */
+export const MUSIC_SORT_OPTIONS: SortOption<UniversalSort>[] = [
+  { value: 'title-asc', label: 'Title' },
+  { value: 'duration-desc', label: 'Duration' },
+  { value: 'artist-asc', label: 'Artist' },
+  { value: 'size-desc', label: 'Size' },
+  { value: 'album-asc', label: 'Album' },
+  { value: 'recently-added', label: 'Age' },
+];
+
 type SortStore = {
   universalSort: UniversalSort;
   smartListSort: SmartListSort;
+  /** Music tab sort, kept separate so Videos keeps its own selection. */
+  musicSort: UniversalSort;
   setUniversalSort: (value: UniversalSort) => void;
   setSmartListSort: (value: SmartListSort) => void;
+  setMusicSort: (value: UniversalSort) => void;
 };
 
 export const useSortStore = create<SortStore>((set) => ({
   universalSort: 'recently-added',
   smartListSort: 'name',
+  musicSort: 'title-asc',
   setUniversalSort: (universalSort) => set({ universalSort }),
   setSmartListSort: (smartListSort) => set({ smartListSort }),
+  setMusicSort: (musicSort) => set({ musicSort }),
 }));

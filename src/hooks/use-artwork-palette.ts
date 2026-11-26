@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ImageColorsResult } from 'react-native-image-colors';
 
 import { THEME_CONFIG, type ThemePalette } from '@/constants/theme';
+import { useSettingsStore } from '@/features/settings/store/settings.store';
 import { useResolvedTheme } from '@/hooks/use-theme-store';
 import { extractImageColors } from '@/lib/image-colors';
 import { buildArtworkPalette, pickSourceColor } from '@/utils/color';
@@ -21,7 +22,14 @@ const EMPTY_STATE: ColorState = { uri: '', colors: null };
 export function useArtworkPalette(uri?: string | null): ThemePalette | null {
   const { theme: baseTheme } = useResolvedTheme();
   const [state, setState] = useState<ColorState>(EMPTY_STATE);
-  const enabled = THEME_CONFIG.settings.dynamicAlbumArtTheme;
+  const dynamicColors = useSettingsStore((s) => s.settings.appearance.dynamicColors);
+  const dynamicSource = useSettingsStore((s) => s.settings.appearance.dynamicColorSource);
+  const hideSensitive = useSettingsStore((s) => s.settings.privacy.hideSensitiveThumbnails);
+  const enabled =
+    THEME_CONFIG.settings.dynamicAlbumArtTheme &&
+    dynamicColors &&
+    dynamicSource === 'album-art' &&
+    !hideSensitive;
 
   useEffect(() => {
     let cancelled = false;

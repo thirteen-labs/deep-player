@@ -1,5 +1,5 @@
-import { useDbStore } from '@/lib/db/store';
 import { usePlayerStore } from '@/stores/player-store';
+import { openTrackSheet } from '@/stores/track-sheet-store';
 
 import { TrackRow as TrackRowBase } from './ui/track-row';
 
@@ -11,17 +11,24 @@ type Props = {
   selectionMode?: boolean;
   onPress?: () => void;
   onLongPress?: () => void;
-  onEditPress?: () => void;
+  onMorePress?: () => void;
 };
 
 /**
- * Connected track row. Uses stable store action selectors.
+ * Connected track row. Plays on press and opens the shared track options
+ * sheet from the overflow button (or a custom handler when provided).
  */
-export function TrackRow({ track, index, active, selected, selectionMode, onPress, onLongPress, onEditPress }: Props) {
+export function TrackRow({
+  track,
+  index,
+  active,
+  selected,
+  selectionMode,
+  onPress,
+  onLongPress,
+  onMorePress,
+}: Props) {
   const play = usePlayerStore((s) => s.play);
-  const playNext = usePlayerStore((s) => s.playNext);
-  const addToQueue = usePlayerStore((s) => s.addToQueue);
-  const toggleFavorite = useDbStore((s) => s.toggleFavorite);
 
   return (
     <TrackRowBase
@@ -32,10 +39,7 @@ export function TrackRow({ track, index, active, selected, selectionMode, onPres
       selectionMode={selectionMode}
       onPress={onPress ?? (() => play(track))}
       onLongPress={onLongPress}
-      onFavoritePress={() => void toggleFavorite(track.id)}
-      onPlayNextPress={() => playNext(track)}
-      onAddToQueuePress={() => addToQueue(track)}
-      onEditPress={onEditPress}
+      onMorePress={onMorePress ?? (() => openTrackSheet(track))}
     />
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import Animated, {
+  cancelAnimation,
   Easing,
   useAnimatedStyle,
   useSharedValue,
@@ -10,6 +11,7 @@ import Animated, {
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { useMotionEnabled } from '@/features/settings/hooks/use-motion';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -34,10 +36,18 @@ export function Loader({
   style,
 }: LoaderProps) {
   const theme = useTheme();
+  const motionEnabled = useMotionEnabled();
   const rotation = useSharedValue(0);
   const pulse = useSharedValue(1);
 
   useEffect(() => {
+    if (!motionEnabled) {
+      cancelAnimation(rotation);
+      cancelAnimation(pulse);
+      rotation.value = 0;
+      pulse.value = 1;
+      return;
+    }
     rotation.value = withRepeat(
       withTiming(1, { duration: 900, easing: Easing.linear }),
       -1,
@@ -51,7 +61,7 @@ export function Loader({
       -1,
       true,
     );
-  }, [rotation, pulse]);
+  }, [motionEnabled, rotation, pulse]);
 
   const spinnerStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotation.value * 360}deg` }],

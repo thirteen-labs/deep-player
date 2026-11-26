@@ -30,6 +30,8 @@ type SectionCardProps = PropsWithChildren<{
   titleStyle?: StyleProp<TextStyle>;
   /** Draw a hairline below the header to separate it from its children. */
   headerDivider?: boolean;
+  /** Render without a glass card border, filling the available width. */
+  flush?: boolean;
   /** Right-aligned header content (e.g. a button). */
   action?: ReactNode;
   footer?: ReactNode;
@@ -49,6 +51,7 @@ export function SectionCard({
   titleVariant = 'label',
   titleStyle,
   headerDivider = false,
+  flush = false,
   action,
   footer,
   children,
@@ -61,13 +64,13 @@ export function SectionCard({
   const theme = useTheme();
   const hasHeader = Boolean(title || subtitle || Icon || action);
 
-  return (
-    <GlassView style={[styles.card, { padding, borderRadius: radius }, style]}>
+  const content = (
+    <>
       {hasHeader ? (
         <View
           style={[
             styles.header,
-            headerDivider && {
+            headerDivider && !flush && {
               marginBottom: Spacing.three,
               paddingBottom: Spacing.two,
               borderBottomWidth: StyleSheet.hairlineWidth,
@@ -98,12 +101,25 @@ export function SectionCard({
       ) : null}
       <View style={[styles.body, { gap }, contentStyle]}>{children}</View>
       {footer ? <View style={styles.footer}>{footer}</View> : null}
+    </>
+  );
+
+  if (flush) {
+    return <View style={[styles.flush, { padding }, style]}>{content}</View>;
+  }
+
+  return (
+    <GlassView style={[styles.card, { padding, borderRadius: radius }, style]}>
+      {content}
     </GlassView>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
+    width: '100%',
+  },
+  flush: {
     width: '100%',
   },
   header: {

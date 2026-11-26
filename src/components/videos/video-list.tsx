@@ -120,6 +120,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
+    paddingVertical: Spacing.one,
+    paddingHorizontal: Spacing.half,
+    marginBottom: Spacing.one,
   },
   content: {
     flex: 1,

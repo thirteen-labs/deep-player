@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 
 import { CollectionList, EmptyState, folderIcon, LoadingState, SectionCard } from '@/components/ui';
 import type { CollectionItem } from '@/components/ui';
+import { Spacing } from '@/constants/theme';
 import type { Folder } from '@/lib/db/schema';
 
 type FolderSectionProps = {
@@ -42,7 +43,7 @@ export function FolderSection({
   );
 
   return (
-    <SectionCard title={title} subtitle={subtitle}>
+    <SectionCard title={title} subtitle={subtitle} flush padding={Spacing.half} gap={Spacing.half}>
       {isLoading ? <LoadingState message={`Loading ${title.toLowerCase()}…`} /> : null}
       {!isLoading && folders.length > 0 ? <CollectionList items={items} /> : null}
       {!isLoading && folders.length === 0 ? (

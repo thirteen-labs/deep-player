@@ -9,6 +9,8 @@ import { PressableScale } from './pressable-scale';
 export type Segment<T extends string | number> = {
   label: string;
   value: T;
+  /** Spoken label when the visible label is compact. */
+  accessibilityLabel?: string;
 };
 
 type SegmentedControlProps<T extends string | number> = {
@@ -43,7 +45,7 @@ export function SegmentedControl<T extends string | number>({
             key={String(option.value)}
             accessibilityRole="button"
             accessibilityState={{ selected }}
-            accessibilityLabel={option.label}
+            accessibilityLabel={option.accessibilityLabel ?? option.label}
             onPress={() => onValueChange(option.value)}
             style={[styles.segment, segmentStyle, selected && { backgroundColor: theme.tint }]}>
             <ThemedText type="label" themeColor={selected ? 'background' : 'textSecondary'}>

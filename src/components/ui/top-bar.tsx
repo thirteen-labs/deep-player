@@ -20,6 +20,8 @@ type TopBarProps = {
   showNotifications?: boolean;
   /** Show a back button instead of relying on the navigator header. */
   showBack?: boolean;
+  /** Show the app logo at the start. Tab headers use their own title instead. */
+  showLogo?: boolean;
 };
 
 /** Shared top bar: app logo at the far start, title, then sort/utility actions. */
@@ -31,6 +33,7 @@ export function TopBar({
   onSearchPress,
   showNotifications = false,
   showBack = false,
+  showLogo = true,
 }: TopBarProps) {
   const { width } = useWindowDimensions();
   const compact = width < 560;
@@ -45,11 +48,11 @@ export function TopBar({
           iconSize={18}
           onPress={() => router.back()}
         />
-      ) : (
+      ) : showLogo ? (
         <AppLogo compact={compact} onPress={() => router.push('/folders')} />
-      )}
+      ) : null}
 
-      {title && (!compact || showBack) ? (
+      {title && (!showLogo || !compact || showBack) ? (
         <ThemedText type="label" style={styles.title} numberOfLines={1}>
           {title}
         </ThemedText>

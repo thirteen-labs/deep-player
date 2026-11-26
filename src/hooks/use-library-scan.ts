@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Alert } from 'react-native';
 
 import { useDbStore } from '@/lib/db/store';
-import { scanLibrary, scanVideos } from '@/lib/library/scan';
+import { scanMedia, type ScanKind } from '@/lib/library/scan';
 
-export type ScanKind = 'all' | 'music' | 'video';
+export type { ScanKind } from '@/lib/library/scan';
 
 /** Shared rescan action for the music and video settings screens. */
 export function useLibraryScan() {
@@ -14,8 +14,7 @@ export function useLibraryScan() {
   const scan = async (kind: ScanKind) => {
     setIsScanning(true);
     try {
-      if (kind !== 'video') await scanLibrary();
-      if (kind !== 'music') await scanVideos();
+      await scanMedia(kind);
       await load();
       const label = kind === 'video' ? 'Videos' : kind === 'music' ? 'Music' : 'Music and videos';
       Alert.alert('Library updated', `${label} have been rescanned.`);

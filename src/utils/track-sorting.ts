@@ -8,6 +8,7 @@ export type TrackSortKey =
   | 'album-asc'
   | 'recently-added'
   | 'duration-desc'
+  | 'size-desc'
   | 'favorites-first';
 
 export const TRACK_SORT_OPTIONS: { key: TrackSortKey; label: string }[] = [
@@ -41,6 +42,8 @@ export function sortTracks(tracks: Track[], sortKey: TrackSortKey): Track[] {
       return items.sort((a, b) => (b.addedAt ?? 0) - (a.addedAt ?? 0));
     case 'duration-desc':
       return items.sort((a, b) => (b.durationMs ?? 0) - (a.durationMs ?? 0));
+    case 'size-desc':
+      return items.sort((a, b) => (b.size ?? 0) - (a.size ?? 0) || byText(a.title, b.title));
     case 'favorites-first':
       return items.sort((a, b) => Number(b.favorite) - Number(a.favorite) || byText(a.title, b.title));
     default:

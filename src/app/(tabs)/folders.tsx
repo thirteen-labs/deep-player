@@ -3,9 +3,10 @@ import { useEffect, useMemo } from 'react';
 
 import { FolderSection } from '@/components/folders/folder-section';
 import { Screen, TopBar } from '@/components/ui';
+import { useSettingsStore } from '@/features/settings/store/settings.store';
 import { useDbStore } from '@/lib/db/store';
 import { useSortStore } from '@/stores/sort-store';
-import { resolveFolderTracks } from '@/utils/folder-tracks';
+import { countFolderTracks, createFolderTrackLookup } from '@/utils/folder-tracks';
 import { sortFolders } from '@/utils/sort';
 
 /** Folder browser: smart video folders generated from recurring series names. */
@@ -16,15 +17,17 @@ export default function FoldersScreen() {
   const folderTracks = useDbStore((s) => s.folderTracks);
   const isLoaded = useDbStore((s) => s.isLoaded);
   const smartListSort = useSortStore((s) => s.smartListSort);
+  const showEmpty = useSettingsStore((s) => s.settings.folders.showEmpty);
 
   useEffect(() => {
     if (!isLoaded) void load();
   }, [isLoaded, load]);
 
   const folderCounts = useMemo(() => {
+    const lookup = createFolderTrackLookup(tracks, folderTracks);
     const counts = new Map<string, number>();
     for (const folder of folders) {
-      counts.set(folder.id, resolveFolderTracks(folder, tracks, folderTracks).length);
+      counts.set(folder.id, countFolderTracks(folder, lookup));
     }
     return counts;
   }, [folders, tracks, folderTracks]);
@@ -34,17 +37,21 @@ export default function FoldersScreen() {
       sortFolders(
         folders.filter(
           (folder) =>
-            folder.smartlistType === 'series' && (folderCounts.get(folder.id) ?? 0) > 0,
+            folder.smartlistType === 'series' &&
+            (showEmpty || (folderCounts.get(folder.id) ?? 0) > 0),
         ),
         smartListSort,
       ),
-    [folderCounts, folders, smartListSort],
+    [folderCounts, folders, smartListSort, showEmpty],
   );
 
   const openFolder = (id: string) => router.push(`/folders/${encodeURIComponent(id)}`);
 
   return (
-    <Screen header={<TopBar title="Folders" showSmartSort showNotifications={false} />}>
+    <Screen
+      header={
+        <TopBar title="Folders" showLogo={false} showSmartSort showSearch showNotifications={false} />
+      }>
       <FolderSection
         title="Smart folders"
         subtitle="Videos grouped by series name"

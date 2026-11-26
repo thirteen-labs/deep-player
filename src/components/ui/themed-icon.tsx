@@ -5,8 +5,8 @@ import { THEME_COLOR_KEYS, type ThemeColor } from '@/constants/theme';
 import { IconSize } from '@/constants/typography';
 import { useTheme } from '@/hooks/use-theme';
 
-/** Any Iconoir icon component, which renders through react-native-svg. */
-export type AppIcon = ComponentType<SvgProps>;
+/** Any SVG icon component. `color` is a plain string for Solar compatibility. */
+export type AppIcon = ComponentType<Omit<SvgProps, 'color'> & { color?: string }>;
 
 type ThemedIconProps = {
   icon: AppIcon;

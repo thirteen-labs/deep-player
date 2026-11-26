@@ -4,6 +4,7 @@ import { useEffect, useMemo } from 'react';
 import { TrackCollection } from '@/components/library/track-collection';
 import { EmptyState, LoadingState, Screen, SectionCard, TopBar } from '@/components/ui';
 import { VideoList } from '@/components/videos/video-list';
+import { Spacing } from '@/constants/theme';
 import { useSortedTracks } from '@/hooks/use-sorted-tracks';
 import { useDbStore } from '@/lib/db/store';
 import { resolveFolderTracks } from '@/utils/folder-tracks';
@@ -48,8 +49,13 @@ export default function FolderDetailScreen() {
 
   if (folder.mediaType === 'video') {
     return (
-      <Screen header={<TopBar title={folder.name} showNotifications={false} />}>
-        <SectionCard title={folder.name} subtitle={`${sortedContents.length} videos`}>
+      <Screen fullWidth header={<TopBar title={folder.name} showNotifications={false} />}>
+        <SectionCard
+          title={folder.name}
+          subtitle={`${sortedContents.length} videos`}
+          flush
+          padding={Spacing.half}
+          gap={Spacing.half}>
           <VideoList
             videos={sortedContents}
             positions={positions}

@@ -3,8 +3,9 @@ import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, TextInput
 
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
-import { Radius, Typography } from '@/constants/typography';
+import { getTypographyStyles, Radius } from '@/constants/typography';
 import { useTheme } from '@/hooks/use-theme';
+import { useFontScale } from '@/stores/font-size-store';
 
 import { AppButton } from './app-button';
 import { GlassView } from './glass-view';
@@ -30,6 +31,7 @@ export function NamePromptModal({
   onConfirm,
 }: NamePromptModalProps) {
   const theme = useTheme();
+  const fontScale = useFontScale();
   // The parent remounts this modal with a new `key` each time it opens, so the
   // initial value is always fresh without an effect.
   const [text, setText] = useState(value);
@@ -67,6 +69,7 @@ export function NamePromptModal({
               placeholder="Name"
               placeholderTextColor={theme.textSecondary}
               style={[
+                getTypographyStyles(fontScale).body,
                 styles.input,
                 {
                   backgroundColor: theme.backgroundElement,
@@ -109,7 +112,6 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   input: {
-    ...Typography.body,
     borderWidth: 1,
     borderRadius: Radius.lg,
     paddingHorizontal: Spacing.three,

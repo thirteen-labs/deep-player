@@ -32,7 +32,7 @@ import { AppButton, EmptyState, Screen, SectionCard } from '@/components/ui';
 | --- | --- |
 | `InfoRow` | Label + value (+ subtitle/icon), optionally pressable (`onPress`). |
 | `FolderRow` | Library folder/smartlist row built on `InfoRow`. |
-| `TrackRow` | Presentational track row; pass `onPress` and `onFavoritePress`. |
+| `TrackRow` | Presentational track row; pass `onPress` and `onMorePress` (opens the shared track options sheet). |
 | `TrackList` | Tracks + loading/empty states in one component. |
 | `MediaArtwork` | Square artwork with themed fallback icon. |
 | `EmptyState` / `LoadingState` | Consistent placeholders. |
@@ -51,13 +51,14 @@ import { AppButton, EmptyState, Screen, SectionCard } from '@/components/ui';
 | `ThemedIcon` | Iconoir icon with a palette key or explicit color. |
 | `PermissionRow` | Label + status + request button for system permissions. |
 | `NowPlayingCard` | Compact now-playing bar that opens `/player`. Reads the player store itself; no props needed. |
-| `AppBottomSheet` | Themed `@gorhom/bottom-sheet` wrapper; starts closed, control via ref (`present()`, `snapToIndex()`, `close()`). |
+| `AppBottomSheet` | Themed `@gorhom/bottom-sheet` wrapper; starts closed, control via ref (`present()`, `snapToIndex()`, `close()`). Supports `icon`, `scrollable`, and `scrollToTopKey` for long action lists. |
 
 ## Typography and sizing
 
 - Use `ThemedText` with a semantic `type`: `display`, `title`, `subtitle`, `heading`, `callout`, `body`, `bodySmall`, `label`, `footnote`, `caption`, `eyebrow`, `numeric`, `link`, or `code`.
 - Styles come from `src/constants/typography.ts`; do not hardcode `fontSize` or `lineHeight` in screens.
 - Use `Spacing`, `Radius`, and `IconSize` from `src/constants` for layout, corner radii, and icon dimensions.
+- `ThemedText` applies the user's Font size choice from Settings → Appearance on top of the base scale. Raw `TextInput`s should use `getTypographyStyles(useFontScale())` rather than spreading `Typography` directly.
 - Font scaling follows system text-size settings; do not set `allowFontScaling={false}`.
 
 ## Hooks / utils

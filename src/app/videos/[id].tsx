@@ -11,16 +11,25 @@ import {
   SoundHigh,
   SoundOff,
 } from 'iconoir-react-native';
+import { NavigationBar } from 'expo-navigation-bar';
 import { router, useLocalSearchParams } from 'expo-router';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { isPictureInPictureSupported, VideoView, useVideoPlayer } from 'expo-video';
+import { Platform, Pressable, StatusBar, StyleSheet, View } from 'react-native';
+import {
+  isPictureInPictureSupported,
+  VideoView,
+  useVideoPlayer,
+  type VideoContentFit,
+} from 'expo-video';
 
 import { ThemeOverrideProvider } from '@/components/theme-override';
 import { ThemedIcon } from '@/components/ui/themed-icon';
 import { ThemedText } from '@/components/themed-text';
 import { IconButton, PressableScale, Scrubber } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
+import { isCapabilitySupported } from '@/features/settings/capabilities/capability.registry';
+import { useSettingsStore } from '@/features/settings/store/settings.store';
 import { useArtworkPalette } from '@/hooks/use-artwork-palette';
 import { useMediaShortcuts } from '@/hooks/use-media-shortcuts';
 import { useTheme } from '@/hooks/use-theme';
@@ -30,12 +39,44 @@ import { withAlpha } from '@/utils/color';
 const SAVE_INTERVAL_SECONDS = 5;
 const MIN_SAVE_SECONDS = 10;
 const END_GUARD_SECONDS = 10;
-const CONTROLS_TIMEOUT_MS = 3500;
 const VIDEO_SPEEDS = [1, 1.25, 1.5, 2, 0.75, 0.5] as const;
+
+/** Maps the settings zoom/aspect preferences onto expo-video's content fit. */
+function resolveContentFit(
+  zoomMode: 'fit' | 'fill' | 'zoom',
+  aspectRatio: 'fit' | 'fill' | 'crop' | 'stretch',
+): VideoContentFit {
+  if (zoomMode === 'zoom' || aspectRatio === 'crop') return 'cover';
+  if (zoomMode === 'fill' || aspectRatio === 'fill' || aspectRatio === 'stretch') return 'fill';
+  return 'contain';
+}
+
+/** Converts the current physical orientation into a lock policy. */
+function clampSpeed(value: number): number {
+  return Math.min(4, Math.max(0.25, Number.isFinite(value) ? value : 1));
+}
+
+function lockForOrientation(
+  orientation: ScreenOrientation.Orientation,
+): ScreenOrientation.OrientationLock {
+  const Lock = ScreenOrientation.OrientationLock;
+  switch (orientation) {
+    case ScreenOrientation.Orientation.LANDSCAPE_LEFT:
+      return Lock.LANDSCAPE_LEFT;
+    case ScreenOrientation.Orientation.LANDSCAPE_RIGHT:
+      return Lock.LANDSCAPE_RIGHT;
+    case ScreenOrientation.Orientation.PORTRAIT_DOWN:
+      return Lock.PORTRAIT_DOWN;
+    case ScreenOrientation.Orientation.PORTRAIT_UP:
+      return Lock.PORTRAIT_UP;
+    default:
+      return Lock.DEFAULT;
+  }
+}
 
 /**
  * Immersive video player with an mpv-style overlay: tap for controls, seek in
- * 10s steps, cycle speed, PiP/fullscreen, and keyboard shortcuts on web.
+ * configurable steps, cycle speed, PiP/fullscreen, and keyboard shortcuts on web.
  */
 export default function VideoPlayerScreen() {
   const { id } = useLocalSearchParams();
@@ -46,20 +87,64 @@ export default function VideoPlayerScreen() {
   const theme = artworkPalette ?? baseTheme;
   const setPlaybackPosition = useDbStore((s) => s.setPlaybackPosition);
   const recordPlayback = useDbStore((s) => s.recordPlayback);
+  const videoSettings = useSettingsStore((s) => s.settings.video);
+  const playbackSettings = useSettingsStore((s) => s.settings.playback);
+  const notificationSettings = useSettingsStore((s) => s.settings.notifications);
 
   // Captured once per route so periodic position writes never re-trigger resume.
   const [initialPosition] = useState(
     () => useDbStore.getState().playbackPositions[trackId] ?? 0,
   );
+  // The configured default speed is applied once, at player creation.
+  const [speed, setSpeed] = useState(() => {
+    const { audio: audioPrefs, playback: playbackPrefs } = useSettingsStore.getState().settings;
+    return clampSpeed(
+      audioPrefs.defaultSpeed !== 1 ? audioPrefs.defaultSpeed : playbackPrefs.defaultSpeed,
+    );
+  });
   const videoUri = track?.uri ?? null;
+
+  const lockScreenActive =
+    playbackSettings.notificationControls && notificationSettings.lockScreenControls;
+  const videoAudioMixingMode =
+    playbackSettings.audioFocus === 'strict' || lockScreenActive
+      ? 'doNotMix'
+      : playbackSettings.duckOnInterruption
+        ? 'duckOthers'
+        : 'mixWithOthers';
 
   const player = useVideoPlayer(videoUri, (p) => {
     p.timeUpdateEventInterval = 0.25;
-    p.staysActiveInBackground = true;
-    p.showNowPlayingNotification = true;
-    p.audioMixingMode = 'doNotMix';
+    p.staysActiveInBackground = playbackSettings.backgroundVideoAudio;
+    p.showNowPlayingNotification = lockScreenActive && notificationSettings.playbackNotification;
+    p.audioMixingMode = videoAudioMixingMode;
     p.preservesPitch = true;
+    p.playbackRate = speed;
+  }, {
+    seekBackwardIncrement: videoSettings.doubleTapSeek,
+    seekForwardIncrement: videoSettings.doubleTapSeek,
+    videoChangeFrameRateStrategy:
+      videoSettings.frameRateMode === 'original' ? 'off' : 'onlyIfSeamless',
   });
+
+  // Native player properties are mutable; keep them in sync with live settings.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability -- mutating the native player is intentional.
+    player.staysActiveInBackground = playbackSettings.backgroundVideoAudio;
+    player.showNowPlayingNotification =
+      lockScreenActive && notificationSettings.playbackNotification;
+    player.audioMixingMode = videoAudioMixingMode;
+  }, [
+    player,
+    playbackSettings.backgroundVideoAudio,
+    playbackSettings.notificationControls,
+    playbackSettings.audioFocus,
+    playbackSettings.duckOnInterruption,
+    notificationSettings.playbackNotification,
+    notificationSettings.lockScreenControls,
+    lockScreenActive,
+    videoAudioMixingMode,
+  ]);
 
   const { isPlaying } = useEvent(player, 'playingChange', { isPlaying: player.playing });
   const { currentTime } = useEvent(player, 'timeUpdate', {
@@ -78,13 +163,50 @@ export default function VideoPlayerScreen() {
   const lastSaved = useRef(initialPosition);
   const completed = useRef(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoFullscreenDone = useRef(false);
 
   const [controlsVisible, setControlsVisible] = useState(true);
-  const [speed, setSpeed] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isInPip, setIsInPip] = useState(false);
-  const pipSupported = useMemo(() => isPictureInPictureSupported(), []);
+  const pipNativeSupported = useMemo(() => isPictureInPictureSupported(), []);
+  const pipSupported =
+    pipNativeSupported &&
+    videoSettings.pipEnabled &&
+    isCapabilitySupported('video.pictureInPicture');
+  const controlsTimeoutMs = Math.min(15000, Math.max(1000, videoSettings.autoHideControls));
+
+  // Per-video system chrome settings restore their previous state on exit.
+  useEffect(() => {
+    if (Platform.OS === 'web' || !isCapabilitySupported('system.statusBar')) return;
+    StatusBar.setHidden(!videoSettings.showStatusBar, 'fade');
+    return () => StatusBar.setHidden(false, 'fade');
+  }, [videoSettings.showStatusBar]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android' || !isCapabilitySupported('system.navigationBar')) return;
+    NavigationBar.setHidden(!videoSettings.showNavigationBar);
+    return () => NavigationBar.setHidden(false);
+  }, [videoSettings.showNavigationBar]);
+
+  useEffect(() => {
+    if (Platform.OS === 'web' || !videoSettings.rotationLock) return;
+    let cancelled = false;
+    let previousLock: ScreenOrientation.OrientationLock | null = null;
+    void (async () => {
+      try {
+        previousLock = await ScreenOrientation.getOrientationLockAsync();
+        const orientation = await ScreenOrientation.getOrientationAsync();
+        if (!cancelled) await ScreenOrientation.lockAsync(lockForOrientation(orientation));
+      } catch (cause) {
+        console.warn('Could not lock video orientation', cause);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (previousLock !== null) void ScreenOrientation.lockAsync(previousLock);
+    };
+  }, [videoSettings.rotationLock]);
 
   useEffect(() => {
     if (!videoUri || !trackId) return;
@@ -101,9 +223,17 @@ export default function VideoPlayerScreen() {
       ) {
         player.currentTime = resumeAt;
       }
-      void recordPlayback(trackId);
+      if (playbackSettings.playbackHistory) void recordPlayback(trackId);
     });
-  }, [videoUri, player, trackId, track?.durationMs, initialPosition, recordPlayback]);
+  }, [
+    videoUri,
+    player,
+    trackId,
+    track?.durationMs,
+    initialPosition,
+    recordPlayback,
+    playbackSettings.playbackHistory,
+  ]);
 
   useEventListener(player, 'timeUpdate', ({ currentTime: time }) => {
     latestTime.current = time;
@@ -206,8 +336,8 @@ export default function VideoPlayerScreen() {
   const scheduleHide = useCallback(() => {
     if (hideTimer.current) clearTimeout(hideTimer.current);
     if (!isPlaying) return;
-    hideTimer.current = setTimeout(() => setControlsVisible(false), CONTROLS_TIMEOUT_MS);
-  }, [isPlaying]);
+    hideTimer.current = setTimeout(() => setControlsVisible(false), controlsTimeoutMs);
+  }, [isPlaying, controlsTimeoutMs]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -222,6 +352,48 @@ export default function VideoPlayerScreen() {
     setControlsVisible(next);
     if (next) scheduleHide();
   }, [controlsVisible, scheduleHide]);
+
+  // Settings can request fullscreen on playback once per video.
+  useEffect(() => {
+    if (!videoSettings.fullscreenOnPlay || !isPlaying || isFullscreen || autoFullscreenDone.current) {
+      return;
+    }
+    autoFullscreenDone.current = true;
+    void viewRef.current?.enterFullscreen().catch((cause: unknown) => {
+      console.warn('Auto-fullscreen failed', cause);
+    });
+  }, [isPlaying, isFullscreen, videoSettings.fullscreenOnPlay]);
+
+  // expo-video can select embedded/subtitle tracks; styling is engine-gated.
+  useEffect(() => {
+    const { enabled, autoLoad, preferredLanguage } = videoSettings.subtitles;
+    if (!enabled || !autoLoad || status !== 'readyToPlay') {
+      if (player.subtitleTrack) {
+        // eslint-disable-next-line react-hooks/immutability -- mutating the native player is intentional.
+        player.subtitleTrack = null;
+      }
+      return;
+    }
+    const tracks = player.availableSubtitleTracks ?? [];
+    if (tracks.length === 0) return;
+    const language = preferredLanguage.trim().toLowerCase();
+    const match =
+      (language
+        ? tracks.find((track) => track.language?.toLowerCase().startsWith(language))
+        : undefined) ??
+      tracks.find((track) => track.isDefault) ??
+      tracks[0];
+    if (match && player.subtitleTrack !== match) {
+      player.subtitleTrack = match;
+    }
+  }, [
+    player,
+    status,
+    videoSettings.subtitles,
+    videoSettings.subtitles.enabled,
+    videoSettings.subtitles.autoLoad,
+    videoSettings.subtitles.preferredLanguage,
+  ]);
 
   const shortcuts = useMemo(
     () => ({
@@ -278,10 +450,14 @@ export default function VideoPlayerScreen() {
           ref={viewRef}
           player={player}
           style={StyleSheet.absoluteFill}
-          contentFit="contain"
+          contentFit={resolveContentFit(videoSettings.zoomMode, videoSettings.aspectRatio)}
           nativeControls={false}
-          allowsPictureInPicture
-          fullscreenOptions={{ enable: true }}
+          allowsPictureInPicture={pipSupported}
+          fullscreenOptions={{
+            enable: true,
+            orientation:
+              videoSettings.orientation === 'auto' ? 'default' : videoSettings.orientation,
+          }}
           onFullscreenEnter={() => setIsFullscreen(true)}
           onFullscreenExit={() => setIsFullscreen(false)}
           onPictureInPictureStart={() => setIsInPip(true)}
@@ -355,19 +531,19 @@ export default function VideoPlayerScreen() {
                 />
                 <IconButton
                   icon={Undo}
-                  accessibilityLabel="Back 10 seconds"
+                  accessibilityLabel={`Back ${videoSettings.doubleTapSeek} seconds`}
                   size={42}
                   iconSize={20}
                   style={[styles.glassButton, glassStyle]}
-                  onPress={() => seekBy(-10)}
+                  onPress={() => seekBy(-videoSettings.doubleTapSeek)}
                 />
                 <IconButton
                   icon={Redo}
-                  accessibilityLabel="Forward 10 seconds"
+                  accessibilityLabel={`Forward ${videoSettings.doubleTapSeek} seconds`}
                   size={42}
                   iconSize={20}
                   style={[styles.glassButton, glassStyle]}
-                  onPress={() => seekBy(10)}
+                  onPress={() => seekBy(videoSettings.doubleTapSeek)}
                 />
                 <IconButton
                   icon={isMuted ? SoundOff : SoundHigh}

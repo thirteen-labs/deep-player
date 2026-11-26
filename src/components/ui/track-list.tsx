@@ -1,7 +1,6 @@
 import { MusicDoubleNote } from 'iconoir-react-native';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
-import { Spacing } from '@/constants/theme';
 import type { Track } from '@/lib/db/schema';
 
 import { EmptyState } from './empty-state';
@@ -15,10 +14,7 @@ type TrackListProps = {
   selectionMode?: boolean;
   onSelect: (track: Track, index: number) => void;
   onLongPress?: (track: Track, index: number) => void;
-  onFavoritePress?: (track: Track) => void;
-  onPlayNextPress?: (track: Track) => void;
-  onAddToQueuePress?: (track: Track) => void;
-  onEditPress?: (track: Track) => void;
+  onMorePress?: (track: Track, index: number) => void;
   isLoading?: boolean;
   emptyMessage?: string;
   emptyDescription?: string;
@@ -32,10 +28,7 @@ export function TrackList({
   selectionMode = false,
   onSelect,
   onLongPress,
-  onFavoritePress,
-  onPlayNextPress,
-  onAddToQueuePress,
-  onEditPress,
+  onMorePress,
   isLoading = false,
   emptyMessage = 'No tracks in your library yet.',
   emptyDescription = 'Scan the media library in Settings to import tracks from your device.',
@@ -53,7 +46,7 @@ export function TrackList({
   }
 
   return (
-    <View style={styles.list}>
+    <View>
       {tracks.map((track, index) => (
         <TrackRow
           key={track.id}
@@ -64,18 +57,9 @@ export function TrackList({
           selectionMode={selectionMode}
           onPress={() => onSelect(track, index)}
           onLongPress={onLongPress ? () => onLongPress(track, index) : undefined}
-          onFavoritePress={onFavoritePress ? () => onFavoritePress(track) : undefined}
-          onPlayNextPress={onPlayNextPress ? () => onPlayNextPress(track) : undefined}
-          onAddToQueuePress={onAddToQueuePress ? () => onAddToQueuePress(track) : undefined}
-          onEditPress={onEditPress ? () => onEditPress(track) : undefined}
+          onMorePress={onMorePress ? () => onMorePress(track, index) : undefined}
         />
       ))}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  list: {
-    gap: Spacing.half,
-  },
-});

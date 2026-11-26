@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import { useScreenReaderOptimized } from '@/features/settings/hooks/use-accessibility';
 import { useTheme } from '@/hooks/use-theme';
 import type { ContinueItem } from '@/utils/continue';
 import { formatTime } from '@/utils/format';
@@ -21,6 +22,7 @@ type ContinueCardProps = {
 /** Compact resume card for in-progress media. */
 export function ContinueCard({ item, mediaType, onPress }: ContinueCardProps) {
   const theme = useTheme();
+  const screenReaderOptimized = useScreenReaderOptimized();
   const isVideo = mediaType === 'video';
   const remaining = item.duration > 0 ? Math.max(0, item.duration - item.position) : 0;
 
@@ -28,6 +30,13 @@ export function ContinueCard({ item, mediaType, onPress }: ContinueCardProps) {
     <PressableScale
       accessibilityRole="button"
       accessibilityLabel={`Resume ${item.track.title || 'media'}`}
+      accessibilityHint={
+        screenReaderOptimized
+          ? remaining > 0
+            ? `${formatTime(remaining)} remaining`
+            : `${formatTime(item.position)} played`
+          : undefined
+      }
       onPress={onPress}
       style={styles.card}>
       <GlassView style={styles.glass}>

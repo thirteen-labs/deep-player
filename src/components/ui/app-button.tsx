@@ -3,6 +3,7 @@ import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import { useLargeControls } from '@/features/settings/hooks/use-accessibility';
 import { useTheme } from '@/hooks/use-theme';
 
 import { PressableScale } from './pressable-scale';
@@ -33,6 +34,7 @@ export function AppButton({
   style,
 }: AppButtonProps) {
   const theme = useTheme();
+  const largeControls = useLargeControls();
   const background =
     variant === 'primary'
       ? theme.tint
@@ -50,6 +52,7 @@ export function AppButton({
       style={[
         styles.base,
         size === 'small' ? styles.small : styles.medium,
+        largeControls && styles.largeControls,
         { backgroundColor: background, alignSelf: fullWidth ? 'stretch' : 'flex-start', opacity: disabled ? 0.5 : 1 },
         style,
       ]}>
@@ -83,5 +86,9 @@ const styles = StyleSheet.create({
   medium: {
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.three,
+  },
+  largeControls: {
+    minHeight: 56,
+    paddingVertical: Spacing.four,
   },
 });

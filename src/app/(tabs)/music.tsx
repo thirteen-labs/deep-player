@@ -2,11 +2,13 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 
 import { AlbumList, ArtistList, PlaylistList } from '@/components/music/library-lists';
-import { MusicTabs, type MusicSection } from '@/components/music/music-tabs';
+import { MusicTopBar } from '@/components/music/music-top-bar';
+import type { MusicSection } from '@/components/music/music-tabs';
 import { TrackBrowser } from '@/components/music/track-browser';
-import { NowPlayingCard, Screen, TopBar } from '@/components/ui';
+import { NowPlayingCard, Screen } from '@/components/ui';
 import { useLibraryCacheWarming } from '@/hooks/use-library-cache-warming';
 import { useDbStore } from '@/lib/db/store';
+import { useSortStore } from '@/stores/sort-store';
 
 const MUSIC_SECTIONS: MusicSection[] = [
   'songs',
@@ -45,6 +47,7 @@ export default function MusicScreen() {
   const tracks = useDbStore((s) => s.tracks);
   const isLoaded = useDbStore((s) => s.isLoaded);
   const load = useDbStore((s) => s.load);
+  const musicSort = useSortStore((s) => s.musicSort);
 
   useEffect(() => {
     if (!isLoaded) void load();
@@ -56,12 +59,16 @@ export default function MusicScreen() {
   useLibraryCacheWarming(tracks);
 
   return (
-    <Screen header={<TopBar title="Music" showUniversalSort />}>
+    <Screen fullWidth header={<MusicTopBar value={section} onValueChange={setSection} />}>
       <NowPlayingCard />
-      <MusicTabs value={section} onValueChange={setSection} />
 
       {section === 'songs' ? (
-        <TrackBrowser title="Songs" tracks={libraryTracks} isLoading={!isLoaded} />
+        <TrackBrowser
+          title="Songs"
+          tracks={libraryTracks}
+          isLoading={!isLoaded}
+          sortKey={musicSort}
+        />
       ) : null}
       {section === 'favorites' ? (
         <TrackBrowser
@@ -69,6 +76,7 @@ export default function MusicScreen() {
           tracks={favoriteTracks}
           isLoading={!isLoaded}
           showSearch={false}
+          sortKey={musicSort}
         />
       ) : null}
       {section === 'playlists' ? <PlaylistList /> : null}

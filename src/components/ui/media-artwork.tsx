@@ -4,6 +4,7 @@ import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ThemedView } from '@/components/themed-view';
 import { Radius } from '@/constants/typography';
+import { useSettingsStore } from '@/features/settings/store/settings.store';
 
 import { ThemedIcon, type AppIcon } from './themed-icon';
 
@@ -25,11 +26,13 @@ export function MediaArtwork({
   style,
 }: MediaArtworkProps) {
   const dimension = { width: size, height: size, borderRadius: radius };
+  const hideSensitive = useSettingsStore((s) => s.settings.privacy.hideSensitiveThumbnails);
+  const visibleUri = hideSensitive ? null : uri;
 
   return (
     <View style={[styles.artwork, dimension, style]}>
-      {uri ? (
-        <Image source={{ uri }} style={styles.fill} contentFit="cover" transition={200} />
+      {visibleUri ? (
+        <Image source={{ uri: visibleUri }} style={styles.fill} contentFit="cover" transition={200} />
       ) : (
         <ThemedView type="backgroundSelected" style={[styles.fill, styles.fallback]}>
           <ThemedIcon

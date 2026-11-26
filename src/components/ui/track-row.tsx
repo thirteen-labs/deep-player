@@ -1,4 +1,4 @@
-import { Check, Heart, MusicDoubleNote as MusicIcon, Edit, Plus, SkipNext } from 'iconoir-react-native';
+import { Check, HeartSolid, MoreHoriz, MusicDoubleNote as MusicIcon } from 'iconoir-react-native';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -19,14 +19,12 @@ type TrackRowProps = {
   selectionMode?: boolean;
   onPress?: () => void;
   onLongPress?: () => void;
-  onFavoritePress?: () => void;
-  onPlayNextPress?: () => void;
-  onAddToQueuePress?: () => void;
-  onEditPress?: () => void;
+  /** Opens the shared track options sheet. */
+  onMorePress?: () => void;
   style?: StyleProp<ViewStyle>;
 };
 
-/** Compact library track row with artwork, metadata and optional actions. */
+/** Compact library track row with artwork, metadata and a track-options button. */
 export function TrackRow({
   track,
   index,
@@ -35,10 +33,7 @@ export function TrackRow({
   selectionMode = false,
   onPress,
   onLongPress,
-  onFavoritePress,
-  onPlayNextPress,
-  onAddToQueuePress,
-  onEditPress,
+  onMorePress,
   style,
 }: TrackRowProps) {
   const theme = useTheme();
@@ -75,54 +70,28 @@ export function TrackRow({
           <MediaArtwork uri={track.artworkUri} size={44} radius={Spacing.two} fallbackIcon={MusicIcon} />
         )}
         <View style={styles.copy}>
-          <ThemedText type="label" numberOfLines={1} themeColor={active ? 'tint' : 'text'}>
-            {index != null ? `${index + 1}. ` : ''}
-            {track.title || track.uri}
-          </ThemedText>
+          <View style={styles.titleLine}>
+            <ThemedText type="label" numberOfLines={1} themeColor={active ? 'tint' : 'text'} style={styles.title}>
+              {index != null ? `${index + 1}. ` : ''}
+              {track.title || track.uri}
+            </ThemedText>
+            {track.favorite ? (
+              <ThemedIcon icon={HeartSolid} size={12} color="tint" fill="tint" />
+            ) : null}
+          </View>
           <ThemedText type="bodySmall" themeColor="textSecondary" numberOfLines={1}>
             {subtitle}
           </ThemedText>
         </View>
       </PressableScale>
-      {!selectionMode && onPlayNextPress ? (
+      {!selectionMode && onMorePress ? (
         <IconButton
-          icon={SkipNext}
-          accessibilityLabel="Play next"
+          icon={MoreHoriz}
+          accessibilityLabel="Track options"
           size={36}
           iconSize={18}
           variant="plain"
-          onPress={onPlayNextPress}
-        />
-      ) : null}
-      {!selectionMode && onAddToQueuePress ? (
-        <IconButton
-          icon={Plus}
-          accessibilityLabel="Add to queue"
-          size={36}
-          iconSize={18}
-          variant="plain"
-          onPress={onAddToQueuePress}
-        />
-      ) : null}
-      {!selectionMode && onEditPress ? (
-        <IconButton
-          icon={Edit}
-          accessibilityLabel="Edit track"
-          size={36}
-          iconSize={18}
-          variant="plain"
-          onPress={onEditPress}
-        />
-      ) : null}
-      {!selectionMode && onFavoritePress ? (
-        <IconButton
-          icon={Heart}
-          accessibilityLabel={track.favorite ? 'Remove from favorites' : 'Add to favorites'}
-          size={36}
-          iconSize={18}
-          variant="plain"
-          active={track.favorite}
-          onPress={onFavoritePress}
+          onPress={onMorePress}
         />
       ) : null}
     </View>
@@ -136,6 +105,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.half,
+    marginBottom: Spacing.one,
     borderCurve: 'continuous',
   },
   main: {
@@ -155,5 +125,13 @@ const styles = StyleSheet.create({
   copy: {
     flex: 1,
     gap: Spacing.half,
+  },
+  titleLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
+  title: {
+    flexShrink: 1,
   },
 });

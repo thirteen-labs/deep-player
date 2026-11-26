@@ -12,6 +12,7 @@ import {
   Track,
   getDb,
 } from '@/lib/db/schema';
+import { enqueueDbTask } from '@/lib/db/queue';
 import { syncSeriesFolders } from '@/lib/library/series';
 
 export type {
@@ -27,6 +28,8 @@ export type {
 };
 
 type PlaybackStateRow = PlaybackPosition & { lastPlayedAt: number };
+
+let loadInFlight: Promise<void> | null = null;
 
 /** Default folders seeded on first run. */
 const SEED_FOLDERS: Folder[] = [
@@ -46,7 +49,7 @@ const SEED_FOLDERS: Folder[] = [
 async function fetchRecentlyPlayed(db: Awaited<ReturnType<typeof getDb>>) {
   return db.getAllAsync<Track>(
     `SELECT t.* FROM tracks t JOIN playbackState p ON p.trackId = t.id
-     WHERE p.lastPlayedAt > 0 ORDER BY p.lastPlayedAt DESC LIMIT 20`,
+     WHERE p.lastPlayedAt > 0 AND t.hidden = 0 ORDER BY p.lastPlayedAt DESC LIMIT 20`,
   );
 }
 
@@ -83,6 +86,8 @@ type DbStore = {
   playlistTracks: PlaylistTrackRow[];
   /** Tracks with a recent playbackState, newest first. */
   recentlyPlayed: Track[];
+  /** Hidden / blacklisted tracks, excluded from `tracks`. */
+  hiddenTracks: Track[];
   /** Playback position per track, in seconds. */
   playbackPositions: Record<string, number>;
   /** Last playback timestamp per track, in milliseconds. */
@@ -105,9 +110,13 @@ type DbStore = {
   setTrackArtworkUri: (trackId: string, uri: string) => Promise<void>;
   setTrackLocalUri: (trackId: string, uri: string) => Promise<void>;
   recordPlayback: (trackId: string) => Promise<void>;
+  /** Removes every playback timestamp and saved position (privacy clear-on-exit). */
+  clearPlaybackHistory: () => Promise<void>;
   updateTrack: (trackId: string, patch: Partial<Pick<Track, 'title' | 'artist' | 'album' | 'albumArtist' | 'genre' | 'artworkUri'>>) => Promise<void>;
   deleteTrack: (trackId: string) => Promise<void>;
   deleteTracks: (trackIds: string[]) => Promise<void>;
+  /** Hides (blacklists) or unhides a track without deleting it. */
+  setTrackHidden: (trackId: string, hidden: boolean) => Promise<void>;
 };
 
 export const useDbStore = create<DbStore>((set, get) => ({
@@ -119,64 +128,79 @@ export const useDbStore = create<DbStore>((set, get) => ({
   playlists: [],
   playlistTracks: [],
   recentlyPlayed: [],
+  hiddenTracks: [],
   playbackPositions: {},
   lastPlayedAt: {},
   isLoaded: false,
   error: null,
 
-  load: async () => {
-    try {
-      const db = await getDb();
+  load: () => {
+    // Several tabs and the resume button can request a load before the first
+    // one finishes. Share the in-flight work instead of queueing duplicate
+    // full-library reads every time a tab mounts.
+    if (loadInFlight) return loadInFlight;
 
-      // Seed the default folders the first time the library is used.
-      const existing = await db.getFirstAsync<{ count: number }>('SELECT COUNT(*) AS count FROM folders');
-      if (!existing || existing.count === 0) {
-        for (const folder of SEED_FOLDERS) {
-          await db.runAsync(
-            'INSERT OR IGNORE INTO folders (id, name, kind, smartlistType, mediaType, createdAt) VALUES (?, ?, ?, ?, ?, ?)',
-            folder.id,
-            folder.name,
-            folder.kind,
-            folder.smartlistType,
-            folder.mediaType,
-            folder.createdAt
-          );
+    const task = enqueueDbTask(async () => {
+      try {
+        const db = await getDb();
+
+        // Seed the default folders the first time the library is used.
+        const existing = await db.getFirstAsync<{ count: number }>('SELECT COUNT(*) AS count FROM folders');
+        if (!existing || existing.count === 0) {
+          for (const folder of SEED_FOLDERS) {
+            await db.runAsync(
+              'INSERT OR IGNORE INTO folders (id, name, kind, smartlistType, mediaType, createdAt) VALUES (?, ?, ?, ?, ?, ?)',
+              folder.id,
+              folder.name,
+              folder.kind,
+              folder.smartlistType,
+              folder.mediaType,
+              folder.createdAt
+            );
+          }
         }
+
+        const tracks = await db.getAllAsync<Track>('SELECT * FROM tracks WHERE hidden = 0 ORDER BY addedAt DESC');
+        const hiddenTracks = await db.getAllAsync<Track>('SELECT * FROM tracks WHERE hidden = 1 ORDER BY addedAt DESC');
+        // Generated series folders are derived from the library, so refresh them first.
+        await syncSeriesFolders(db, tracks);
+
+        const [folders, folderTracks, positions, playlists, playlistTracks, recentlyPlayed] = await Promise.all([
+          db.getAllAsync<Folder>('SELECT * FROM folders ORDER BY name'),
+          db.getAllAsync<FolderTrackRow>('SELECT * FROM folderTracks ORDER BY folderId, position'),
+          db.getAllAsync<PlaybackStateRow>('SELECT trackId, positionMs, lastPlayedAt FROM playbackState'),
+          db.getAllAsync<Playlist>('SELECT * FROM playlists ORDER BY name'),
+          db.getAllAsync<PlaylistTrackRow>('SELECT * FROM playlistTracks'),
+          fetchRecentlyPlayed(db),
+        ]);
+
+        // Derived artist and album indexes (used by the Artists and Albums screens).
+        const { artists, albums } = deriveLibraryIndexes(tracks);
+
+        set({
+          folders,
+          folderTracks,
+          tracks,
+          hiddenTracks,
+          artists,
+          albums,
+          playlists,
+          playlistTracks,
+          recentlyPlayed,
+          playbackPositions: Object.fromEntries(positions.map((p) => [p.trackId, p.positionMs / 1000] as const)),
+          lastPlayedAt: Object.fromEntries(positions.map((p) => [p.trackId, p.lastPlayedAt] as const)),
+          isLoaded: true,
+          error: null,
+        });
+      } catch (error) {
+        set({ error: String(error) });
       }
+    });
 
-      const tracks = await db.getAllAsync<Track>('SELECT * FROM tracks ORDER BY addedAt DESC');
-      // Generated series folders are derived from the library, so refresh them first.
-      await syncSeriesFolders(db, tracks);
-
-      const [folders, folderTracks, positions, playlists, playlistTracks, recentlyPlayed] = await Promise.all([
-        db.getAllAsync<Folder>('SELECT * FROM folders ORDER BY name'),
-        db.getAllAsync<FolderTrackRow>('SELECT * FROM folderTracks ORDER BY folderId, position'),
-        db.getAllAsync<PlaybackStateRow>('SELECT trackId, positionMs, lastPlayedAt FROM playbackState'),
-        db.getAllAsync<Playlist>('SELECT * FROM playlists ORDER BY name'),
-        db.getAllAsync<PlaylistTrackRow>('SELECT * FROM playlistTracks'),
-        fetchRecentlyPlayed(db),
-      ]);
-
-      // Derived artist and album indexes (used by the Artists and Albums screens).
-      const { artists, albums } = deriveLibraryIndexes(tracks);
-
-      set({
-        folders,
-        folderTracks,
-        tracks,
-        artists,
-        albums,
-        playlists,
-        playlistTracks,
-        recentlyPlayed,
-        playbackPositions: Object.fromEntries(positions.map((p) => [p.trackId, p.positionMs / 1000] as const)),
-        lastPlayedAt: Object.fromEntries(positions.map((p) => [p.trackId, p.lastPlayedAt] as const)),
-        isLoaded: true,
-        error: null,
-      });
-    } catch (error) {
-      set({ error: String(error) });
-    }
+    loadInFlight = task.finally(() => {
+      loadInFlight = null;
+    });
+    return loadInFlight;
   },
 
   upsertTracks: async (tracks) => {
@@ -184,8 +208,8 @@ export const useDbStore = create<DbStore>((set, get) => ({
     const db = await getDb();
     for (const track of tracks) {
       await db.runAsync(
-        `INSERT INTO tracks (id, title, artist, album, albumArtist, genre, durationMs, mimeType, uri, artworkUri, favorite, mediaType, addedAt, localUri)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO tracks (id, title, artist, album, albumArtist, genre, durationMs, size, mimeType, uri, artworkUri, favorite, mediaType, addedAt, localUri, hidden)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            title = excluded.title,
            artist = excluded.artist,
@@ -193,6 +217,7 @@ export const useDbStore = create<DbStore>((set, get) => ({
            albumArtist = excluded.albumArtist,
            genre = excluded.genre,
            durationMs = excluded.durationMs,
+           size = CASE WHEN excluded.size > 0 THEN excluded.size ELSE tracks.size END,
            mimeType = excluded.mimeType,
            uri = excluded.uri,
            artworkUri = COALESCE(excluded.artworkUri, tracks.artworkUri),
@@ -207,13 +232,15 @@ export const useDbStore = create<DbStore>((set, get) => ({
         track.albumArtist,
         track.genre,
         track.durationMs,
+        track.size,
         track.mimeType,
         track.uri,
         track.artworkUri,
         track.favorite ? 1 : 0,
         track.mediaType,
         track.addedAt,
-        track.localUri
+        track.localUri,
+        track.hidden ? 1 : 0
       );
     }
   },
@@ -224,8 +251,12 @@ export const useDbStore = create<DbStore>((set, get) => ({
     if (!row) return;
     const favorite = !row.favorite;
     await db.runAsync('UPDATE tracks SET favorite = ? WHERE id = ?', favorite ? 1 : 0, trackId);
-    const { tracks } = get();
-    set({ tracks: tracks.map((t) => (t.id === trackId ? { ...t, favorite } : t)) });
+    const apply = (list: Track[]) => list.map((t) => (t.id === trackId ? { ...t, favorite } : t));
+    set((state) => ({
+      tracks: apply(state.tracks),
+      hiddenTracks: apply(state.hiddenTracks),
+      recentlyPlayed: apply(state.recentlyPlayed),
+    }));
   },
 
   setPlaybackPosition: async (trackId, positionSeconds) => {
@@ -323,15 +354,23 @@ export const useDbStore = create<DbStore>((set, get) => ({
   setTrackArtworkUri: async (trackId, uri) => {
     const db = await getDb();
     await db.runAsync('UPDATE tracks SET artworkUri = ? WHERE id = ?', uri, trackId);
-    const { tracks } = get();
-    set({ tracks: tracks.map((t) => (t.id === trackId ? { ...t, artworkUri: uri } : t)) });
+    const apply = (list: Track[]) => list.map((t) => (t.id === trackId ? { ...t, artworkUri: uri } : t));
+    set((state) => ({
+      tracks: apply(state.tracks),
+      hiddenTracks: apply(state.hiddenTracks),
+      recentlyPlayed: apply(state.recentlyPlayed),
+    }));
   },
 
   setTrackLocalUri: async (trackId, uri) => {
     const db = await getDb();
     await db.runAsync('UPDATE tracks SET localUri = ? WHERE id = ?', uri, trackId);
-    const { tracks } = get();
-    set({ tracks: tracks.map((t) => (t.id === trackId ? { ...t, localUri: uri } : t)) });
+    const apply = (list: Track[]) => list.map((t) => (t.id === trackId ? { ...t, localUri: uri } : t));
+    set((state) => ({
+      tracks: apply(state.tracks),
+      hiddenTracks: apply(state.hiddenTracks),
+      recentlyPlayed: apply(state.recentlyPlayed),
+    }));
   },
 
   recordPlayback: async (trackId) => {
@@ -350,9 +389,16 @@ export const useDbStore = create<DbStore>((set, get) => ({
     }));
   },
 
+  clearPlaybackHistory: async () => {
+    const db = await getDb();
+    await db.runAsync('DELETE FROM playbackState');
+    set({ recentlyPlayed: [], playbackPositions: {}, lastPlayedAt: {} });
+  },
+
   updateTrack: async (trackId, patch) => {
     const db = await getDb();
-    const current = get().tracks.find((t) => t.id === trackId);
+    const current =
+      get().tracks.find((t) => t.id === trackId) ?? get().hiddenTracks.find((t) => t.id === trackId);
     if (!current) return;
     const next: Track = { ...current, ...patch };
     await db.runAsync(
@@ -367,7 +413,33 @@ export const useDbStore = create<DbStore>((set, get) => ({
     );
     set((state) => {
       const tracks = state.tracks.map((t) => (t.id === trackId ? next : t));
-      return { tracks, ...deriveLibraryIndexes(tracks) };
+      return {
+        tracks,
+        hiddenTracks: state.hiddenTracks.map((t) => (t.id === trackId ? next : t)),
+        recentlyPlayed: state.recentlyPlayed.map((t) => (t.id === trackId ? next : t)),
+        ...deriveLibraryIndexes(tracks),
+      };
+    });
+  },
+
+  setTrackHidden: async (trackId, hidden) => {
+    const db = await getDb();
+    await db.runAsync('UPDATE tracks SET hidden = ? WHERE id = ?', hidden ? 1 : 0, trackId);
+    set((state) => {
+      const track = state.tracks.find((t) => t.id === trackId) ?? state.hiddenTracks.find((t) => t.id === trackId);
+      const withoutTrack = state.tracks.filter((t) => t.id !== trackId);
+      const hiddenWithoutTrack = state.hiddenTracks.filter((t) => t.id !== trackId);
+      const updated = track ? { ...track, hidden } : null;
+      const tracks = updated && !hidden ? [...withoutTrack, updated] : withoutTrack;
+      tracks.sort((a, b) => b.addedAt - a.addedAt);
+      const hiddenTracks = updated && hidden ? [...hiddenWithoutTrack, updated] : hiddenWithoutTrack;
+      hiddenTracks.sort((a, b) => b.addedAt - a.addedAt);
+      return {
+        tracks,
+        hiddenTracks,
+        ...deriveLibraryIndexes(tracks),
+        recentlyPlayed: hidden ? state.recentlyPlayed.filter((t) => t.id !== trackId) : state.recentlyPlayed,
+      };
     });
   },
 
@@ -389,6 +461,7 @@ export const useDbStore = create<DbStore>((set, get) => ({
       const tracks = state.tracks.filter((t) => !ids.has(t.id));
       return {
         tracks,
+        hiddenTracks: state.hiddenTracks.filter((t) => !ids.has(t.id)),
         ...deriveLibraryIndexes(tracks),
         playlistTracks: state.playlistTracks.filter((r) => !ids.has(r.trackId)),
         folderTracks: state.folderTracks.filter((r) => !ids.has(r.trackId)),

@@ -11,6 +11,7 @@ import {
   SectionCard,
 } from '@/components/ui';
 import type { CollectionItem } from '@/components/ui';
+import { Spacing } from '@/constants/theme';
 import { useDbStore } from '@/lib/db/store';
 
 type LibraryRow = CollectionItem;
@@ -57,7 +58,7 @@ export function AlbumList() {
   );
 
   return (
-    <SectionCard title="Albums" subtitle="Browse by release">
+    <SectionCard title="Albums" subtitle="Browse by release" flush padding={Spacing.half} gap={Spacing.half}>
       <LibraryRowList
         rows={rows}
         isLoading={!isLoaded}
@@ -85,7 +86,7 @@ export function ArtistList() {
   );
 
   return (
-    <SectionCard title="Artists" subtitle="Browse by performer">
+    <SectionCard title="Artists" subtitle="Browse by performer" flush padding={Spacing.half} gap={Spacing.half}>
       <LibraryRowList
         rows={rows}
         isLoading={!isLoaded}
@@ -129,6 +130,9 @@ export function PlaylistList() {
       <SectionCard
         title="Playlists"
         subtitle="Your custom collections"
+        flush
+        padding={Spacing.half}
+        gap={Spacing.half}
         action={
           <AppButton
             label="New"

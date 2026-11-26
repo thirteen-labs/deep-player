@@ -3,11 +3,11 @@ import { useEffect, useRef } from 'react';
 
 import { THEME_CONFIG } from '@/constants/theme';
 import { loadThemePreference, saveThemePreference } from '@/db/theme-preference';
-import { useThemeStore, type ThemePreference } from '@/hooks/use-theme-store';
+import { useResolvedTheme, useThemeStore, type ThemePreference } from '@/hooks/use-theme-store';
 
 export function ThemePersistence() {
   const db = useSQLiteContext();
-  const preference = useThemeStore((s) => s.preference);
+  const { preference } = useResolvedTheme();
   const hydrate = useThemeStore((s) => s.hydrate);
   const loadedRef = useRef(false);
   const savedRef = useRef<ThemePreference | null>(null);

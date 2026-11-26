@@ -14,16 +14,24 @@ import {
 } from 'react-native-reanimated';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { EqualizerPersistence } from '@/components/equalizer-persistence';
+import { FontSizePersistence } from '@/components/font-size-persistence';
 import { LayoutPersistence } from '@/components/layout-persistence';
 import { PermissionRequests } from '@/components/permission-requests';
 import { PlayerEngine } from '@/components/player-engine';
 import { SortSheetHost } from '@/components/sort-sheet-host';
 import { ThemePersistence } from '@/components/theme-persistence';
+import { TrackSheetHost } from '@/components/track-sheet-host';
 import { LoadingOverlay } from '@/components/ui';
 import { initAudioSession } from '@/lib/audio/init';
 import { initThemeDb, THEME_DB_NAME } from '@/db/theme-preference';
 import { THEME_CONFIG } from '@/constants/theme';
 import { useResolvedTheme } from '@/hooks/use-theme';
+import { AppLockGate } from '@/features/settings/runtime/app-lock';
+import { DebugOverlay } from '@/features/settings/runtime/debug-overlay';
+import { SettingsRuntime } from '@/features/settings/runtime/settings-runtime';
+import { useSettingsStore } from '@/features/settings/store/settings.store';
+import { useFontSizeStore } from '@/stores/font-size-store';
 
 // Reanimated 4 ignores dependency arrays on native. @gorhom/bottom-sheet still
 // passes them, so keep those compatibility warnings out of the Expo Go log.
@@ -36,6 +44,8 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { theme, hydrated } = useResolvedTheme();
+  const fontScaleHydrated = useFontSizeStore((s) => s.hydrated);
+  const settingsHydrated = useSettingsStore((s) => s.hydrated);
 
   const navTheme = useMemo(() => {
     const base = theme.isDark ? DarkTheme : DefaultTheme;
@@ -75,30 +85,40 @@ export default function RootLayout() {
         console.warn('Theme DB init failed', error);
       }}>
       <ThemePersistence />
+      <FontSizePersistence />
       <LayoutPersistence />
+      <EqualizerPersistence />
+      <SettingsRuntime />
       <PermissionRequests />
       <PlayerEngine />
       <GestureHandlerRootView style={{ flex: 1 }}>
         <BottomSheetModalProvider>
           <ThemeProvider value={navTheme}>
-            {THEME_CONFIG.settings.applyToSystemBars ? (
-              <StatusBar style={theme.statusBarStyle} animated />
-            ) : null}
-            <AnimatedSplashOverlay />
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="settings" />
-              <Stack.Screen name="search" />
-              <Stack.Screen name="folders/[id]" />
-              <Stack.Screen name="playlists/[id]" />
-              <Stack.Screen name="albums/[artist]/[album]" />
-              <Stack.Screen name="artists/[name]" />
-              <Stack.Screen name="player" options={{ presentation: 'modal' }} />
-              <Stack.Screen name="videos/[id]" options={{ presentation: 'fullScreenModal' }} />
-            </Stack>
-            <LoadingOverlay visible={!hydrated} label="Preparing your library…" />
-            <SortSheetHost />
+            <AppLockGate>
+              {THEME_CONFIG.settings.applyToSystemBars ? (
+                <StatusBar style={theme.statusBarStyle} animated />
+              ) : null}
+              {settingsHydrated ? <AnimatedSplashOverlay /> : null}
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="index" />
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="settings" />
+                <Stack.Screen name="search" />
+                <Stack.Screen name="folders/[id]" />
+                <Stack.Screen name="playlists/[id]" />
+                <Stack.Screen name="albums/[artist]/[album]" />
+                <Stack.Screen name="artists/[name]" />
+                <Stack.Screen name="player" options={{ presentation: 'modal' }} />
+                <Stack.Screen name="videos/[id]" options={{ presentation: 'fullScreenModal' }} />
+              </Stack>
+              <LoadingOverlay
+                visible={!hydrated || !fontScaleHydrated || !settingsHydrated}
+                label="Preparing your library…"
+              />
+              <SortSheetHost />
+              <TrackSheetHost />
+              <DebugOverlay />
+            </AppLockGate>
           </ThemeProvider>
         </BottomSheetModalProvider>
       </GestureHandlerRootView>

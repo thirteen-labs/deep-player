@@ -3,11 +3,12 @@ import { Play } from 'iconoir-react-native';
 import { useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { useSettingsStore } from '@/features/settings/store/settings.store';
 import { useScreenBottomInset } from '@/hooks/use-screen-bottom-inset';
 import { useTheme } from '@/hooks/use-theme';
 import { useDbStore } from '@/lib/db/store';
 import { Spacing } from '@/constants/theme';
-import { getContinueItems } from '@/utils/continue';
+import { getLatestContinueItem } from '@/utils/continue';
 
 import { IconButton } from './ui';
 
@@ -23,17 +24,18 @@ export function ContinueWatchingFab() {
   const lastPlayedAt = useDbStore((s) => s.lastPlayedAt);
   const isLoaded = useDbStore((s) => s.isLoaded);
   const load = useDbStore((s) => s.load);
+  const hideRecent = useSettingsStore((s) => s.settings.privacy.hideRecentMedia);
 
   useEffect(() => {
     if (!isLoaded) void load();
   }, [isLoaded, load]);
 
   const resumeItem = useMemo(
-    () => getContinueItems(tracks, positions, lastPlayedAt, 'video', 1)[0],
+    () => getLatestContinueItem(tracks, positions, lastPlayedAt, 'video'),
     [tracks, positions, lastPlayedAt],
   );
 
-  if (!resumeItem) return null;
+  if (hideRecent || !resumeItem) return null;
 
   return (
     <View style={[styles.container, { bottom: bottomInset, right: Spacing.three }]} pointerEvents="box-none">

@@ -18,6 +18,29 @@ export const FontSize = {
 } as const;
 
 /**
+ * User-selectable text size steps. Each multiplier is applied to the semantic
+ * styles below so every screen scales together.
+ */
+export const FONT_SCALES = {
+  small: { label: 'S', accessibilityLabel: 'Small text', multiplier: 0.9 },
+  medium: { label: 'M', accessibilityLabel: 'Medium text', multiplier: 1 },
+  large: { label: 'L', accessibilityLabel: 'Large text', multiplier: 1.15 },
+  xlarge: { label: 'XL', accessibilityLabel: 'Extra large text', multiplier: 1.3 },
+} as const satisfies Record<string, { label: string; accessibilityLabel: string; multiplier: number }>;
+
+export type FontScale = keyof typeof FONT_SCALES;
+
+export const FONT_SCALE_OPTIONS: {
+  value: FontScale;
+  label: string;
+  accessibilityLabel: string;
+}[] = (Object.keys(FONT_SCALES) as FontScale[]).map((value) => ({
+  value,
+  label: FONT_SCALES[value].label,
+  accessibilityLabel: FONT_SCALES[value].accessibilityLabel,
+}));
+
+/**
  * Semantic text levels. Each entry is a complete text style so callers do not
  * have to pair a font size with a guessed line height or weight.
  */
@@ -116,6 +139,28 @@ export const Typography: Record<TextVariant, TextStyle> = {
     fontWeight: Platform.select({ android: '700' }) ?? '500',
   },
 };
+
+const scaledTypographyCache = new Map<FontScale, Record<TextVariant, TextStyle>>();
+
+/** Scaled text styles for the selected font size, cached per step. */
+export function getTypographyStyles(fontScale: FontScale): Record<TextVariant, TextStyle> {
+  const cached = scaledTypographyCache.get(fontScale);
+  if (cached) return cached;
+
+  const multiplier = FONT_SCALES[fontScale].multiplier;
+  const styles = {} as Record<TextVariant, TextStyle>;
+  for (const variant of Object.keys(Typography) as TextVariant[]) {
+    const style = Typography[variant];
+    const fontSize = style.fontSize ?? FontSize.body;
+    styles[variant] = {
+      ...style,
+      fontSize: Math.round(fontSize * multiplier),
+      lineHeight: Math.round((style.lineHeight ?? fontSize) * multiplier),
+    };
+  }
+  scaledTypographyCache.set(fontScale, styles);
+  return styles;
+}
 
 /** Ring sizes for icon-only controls, aligned with the spacing scale. */
 export const IconSize = {

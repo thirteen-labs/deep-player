@@ -1,11 +1,31 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import type { Folder, Track } from '@/lib/db/schema';
+import { useSettingsStore } from '@/features/settings/store/settings.store';
 
 /** A generated folder together with the video ids it should contain. */
 export type SeriesGroup = {
   folder: Folder;
   trackIds: string[];
+};
+
+/** Smart-folder preferences consumed by the library organizer (spec §4.6). */
+export interface SeriesGroupingOptions {
+  smartFolders: 'both' | 'manual' | 'automatic';
+  uncertainMatches: 'suggest' | 'ignore';
+  autoMatchThreshold: number;
+  suggestionThreshold: number;
+  seasonDetection: boolean;
+  episodeDetection: boolean;
+}
+
+export const DEFAULT_SERIES_GROUPING_OPTIONS: SeriesGroupingOptions = {
+  smartFolders: 'both',
+  uncertainMatches: 'suggest',
+  autoMatchThreshold: 90,
+  suggestionThreshold: 65,
+  seasonDetection: true,
+  episodeDetection: true,
 };
 
 const EXTENSION_RE = /\.[a-z0-9]{2,4}$/i;
@@ -111,7 +131,10 @@ function formatName(tokens: string[]): string {
  * "X-Men.mp4", "X-Men 2.mp4" and "X-Men - The Last Stand.mp4" are grouped
  * under "X-Men". Music is never included.
  */
-export function buildSeriesGroups(tracks: Track[]): SeriesGroup[] {
+export function buildSeriesGroups(
+  tracks: Track[],
+  options: SeriesGroupingOptions = DEFAULT_SERIES_GROUPING_OPTIONS,
+): SeriesGroup[] {
   const buckets = new Map<string, { tokens: string[][]; entries: { trackId: string; title: string }[] }>();
 
   for (const track of tracks) {
@@ -134,10 +157,27 @@ export function buildSeriesGroups(tracks: Track[]): SeriesGroup[] {
     .map(([primary, bucket]) => ({ primary, ...bucket }))
     .filter(({ primary, tokens, entries }) => {
       const prefix = sharedPrefix(tokens);
+      if (entries.length < 2 || prefix.length === 0) return false;
+
       const exactPrimary = tokens.some((list) => list.length === 1);
       const distinctivePrimary = primary.length >= 5 && !BROAD_PRIMARIES.has(primary);
       const strong = prefix.length > 1 || primary.includes('-') || exactPrimary || distinctivePrimary;
-      return entries.length > 1 && prefix.length > 0 && strong;
+      // Confidence keeps the previous heuristic at default thresholds while
+      // allowing the user to tighten auto-matching or suppress suggestions.
+      const confidence = Math.min(
+        100,
+        80 +
+          (prefix.length > 1 ? 20 : 0) +
+          (prefix.length >= 3 ? 10 : 0) +
+          (exactPrimary ? 10 : 0) +
+          (primary.includes('-') ? 10 : 0) +
+          (distinctivePrimary ? 10 : 0),
+      );
+
+      if (strong) return confidence >= options.autoMatchThreshold;
+      return (
+        options.uncertainMatches === 'suggest' && confidence >= options.suggestionThreshold
+      );
     })
     .map(({ tokens, entries }) => {
       const prefix = sharedPrefix(tokens);
@@ -165,47 +205,64 @@ export function buildSeriesGroups(tracks: Track[]): SeriesGroup[] {
  * every load: it only writes when the desired folders or memberships change.
  */
 export async function syncSeriesFolders(db: SQLiteDatabase, tracks: Track[]): Promise<void> {
-  const desired = buildSeriesGroups(tracks);
+  const folderSettings = useSettingsStore.getState().settings.folders;
+  // "manual" leaves organization entirely to the user; existing folders stay.
+  if (folderSettings.smartFolders === 'manual') return;
+  const desired = buildSeriesGroups(tracks, folderSettings);
   const desiredIds = new Set(desired.map((group) => group.folder.id));
-  const existing = await db.getAllAsync<{ id: string }>(
-    "SELECT id FROM folders WHERE smartlistType = 'series'",
-  );
 
-  for (const folder of existing) {
-    if (desiredIds.has(folder.id)) continue;
-    await db.runAsync('DELETE FROM folderTracks WHERE folderId = ?', folder.id);
-    await db.runAsync('DELETE FROM folders WHERE id = ?', folder.id);
-  }
+  await db.withTransactionAsync(async () => {
+    const existing = await db.getAllAsync<{ id: string }>(
+      "SELECT id FROM folders WHERE smartlistType = 'series'",
+    );
+    const memberships = await db.getAllAsync<{ folderId: string; trackId: string }>(
+      'SELECT folderId, trackId FROM folderTracks ORDER BY folderId, position ASC',
+    );
+    const currentByFolder = new Map<string, string[]>();
+    for (const row of memberships) {
+      const ids = currentByFolder.get(row.folderId);
+      if (ids) ids.push(row.trackId);
+      else currentByFolder.set(row.folderId, [row.trackId]);
+    }
 
-  for (const group of desired) {
-    const { folder, trackIds } = group;
-    await db.runAsync(
+    const deleteMemberships = await db.prepareAsync('DELETE FROM folderTracks WHERE folderId = ?');
+    const deleteFolder = await db.prepareAsync('DELETE FROM folders WHERE id = ?');
+    const upsertFolder = await db.prepareAsync(
       `INSERT INTO folders (id, name, kind, smartlistType, mediaType, createdAt)
        VALUES (?, ?, ?, 'series', 'video', ?)
        ON CONFLICT(id) DO UPDATE SET name = excluded.name, kind = excluded.kind, mediaType = excluded.mediaType`,
-      folder.id,
-      folder.name,
-      folder.kind,
-      folder.createdAt,
+    );
+    const insertMembership = await db.prepareAsync(
+      'INSERT INTO folderTracks (folderId, trackId, position) VALUES (?, ?, ?)',
     );
 
-    const current = await db.getAllAsync<{ trackId: string }>(
-      'SELECT trackId FROM folderTracks WHERE folderId = ? ORDER BY position ASC',
-      folder.id,
-    );
-    const currentIds = current.map((row) => row.trackId);
-    const unchanged =
-      currentIds.length === trackIds.length && currentIds.every((id, index) => id === trackIds[index]);
-    if (unchanged) continue;
+    try {
+      for (const folder of existing) {
+        if (desiredIds.has(folder.id)) continue;
+        await deleteMemberships.executeAsync([folder.id]);
+        await deleteFolder.executeAsync([folder.id]);
+      }
 
-    await db.runAsync('DELETE FROM folderTracks WHERE folderId = ?', folder.id);
-    for (let index = 0; index < trackIds.length; index += 1) {
-      await db.runAsync(
-        'INSERT INTO folderTracks (folderId, trackId, position) VALUES (?, ?, ?)',
-        folder.id,
-        trackIds[index],
-        index,
-      );
+      for (const group of desired) {
+        const { folder, trackIds } = group;
+        await upsertFolder.executeAsync([folder.id, folder.name, folder.kind, folder.createdAt]);
+
+        const currentIds = currentByFolder.get(folder.id) ?? [];
+        const unchanged =
+          currentIds.length === trackIds.length &&
+          currentIds.every((id, index) => id === trackIds[index]);
+        if (unchanged) continue;
+
+        await deleteMemberships.executeAsync([folder.id]);
+        for (let index = 0; index < trackIds.length; index += 1) {
+          await insertMembership.executeAsync([folder.id, trackIds[index], index]);
+        }
+      }
+    } finally {
+      await deleteMemberships.finalizeAsync();
+      await deleteFolder.finalizeAsync();
+      await upsertFolder.finalizeAsync();
+      await insertMembership.finalizeAsync();
     }
-  }
+  });
 }

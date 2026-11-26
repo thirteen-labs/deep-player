@@ -2,6 +2,7 @@ import {
   NavArrowDown,
   NavArrowUp,
   Heart,
+  MoreHoriz,
   Playlist,
   MusicDoubleNote,
   Pause,
@@ -17,11 +18,12 @@ import {
   Xmark,
 } from 'iconoir-react-native';
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { ScreenBackground } from '@/components/screen-background';
 import { ThemeOverrideProvider } from '@/components/theme-override';
+import { TrackSheetHost } from '@/components/track-sheet-host';
 import { ThemedText } from '@/components/themed-text';
 import {
   AppButton,
@@ -40,6 +42,7 @@ import { useMediaShortcuts } from '@/hooks/use-media-shortcuts';
 import { useTheme } from '@/hooks/use-theme';
 import { useDbStore } from '@/lib/db/store';
 import { PLAYBACK_SPEEDS, usePlayerStore } from '@/stores/player-store';
+import { openTrackSheet, useTrackSheetStore } from '@/stores/track-sheet-store';
 import { withAlpha } from '@/utils/color';
 
 /** Full-screen audio player: artwork, transport, queue and player options. */
@@ -77,6 +80,17 @@ export default function AudioPlayerScreen() {
   const removeFromQueue = usePlayerStore((s) => s.removeFromQueue);
 
   const toggleFavorite = useDbStore((s) => s.toggleFavorite);
+  const setSheetHost = useTrackSheetStore((s) => s.setHost);
+  const closeTrackSheet = useTrackSheetStore((s) => s.close);
+
+  // iOS modals sit above the root overlay layer, so the player owns its sheet.
+  useEffect(() => {
+    setSheetHost('player');
+    return () => {
+      closeTrackSheet();
+      setSheetHost('root');
+    };
+  }, [setSheetHost, closeTrackSheet]);
 
   const shortcuts = useMemo(
     () => ({
@@ -113,6 +127,7 @@ export default function AudioPlayerScreen() {
             <AppButton label="Browse music" icon={MusicDoubleNote} onPress={() => router.push('/music')} />
           </ScrollView>
         </ScreenBackground>
+        <TrackSheetHost owner="player" />
       </ThemeOverrideProvider>
     );
   }
@@ -143,6 +158,11 @@ export default function AudioPlayerScreen() {
               accessibilityLabel={showQueue ? 'Hide queue' : 'Show queue'}
               active={showQueue}
               onPress={() => setShowQueue((visible) => !visible)}
+            />
+            <IconButton
+              icon={MoreHoriz}
+              accessibilityLabel="Track options"
+              onPress={() => openTrackSheet(track)}
             />
           </View>
 
@@ -334,6 +354,7 @@ export default function AudioPlayerScreen() {
           <View style={{ height: Spacing.two }} />
         </ScrollView>
       </ScreenBackground>
+      <TrackSheetHost owner="player" />
     </ThemeOverrideProvider>
   );
 }
