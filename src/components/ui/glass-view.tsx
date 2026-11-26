@@ -13,6 +13,10 @@ type GlassViewProps = PropsWithChildren<{
   interactive?: boolean;
 }>;
 
+// `backdropFilter` is supported by React Native Web but is not part of the
+// core native ViewStyle type in every Expo SDK.
+type WebGlassStyle = ViewStyle & { backdropFilter: string };
+
 export function GlassView({ children, style, intensity = 55, interactive = false }: GlassViewProps) {
   const theme = useTheme();
   const flattened = StyleSheet.flatten(style) || {};
@@ -27,19 +31,16 @@ export function GlassView({ children, style, intensity = 55, interactive = false
   }
 
   if (Platform.OS === 'web') {
+    const webGlassStyle = {
+      borderRadius,
+      backgroundColor: theme.glassBackground,
+      borderColor: theme.glassBorder,
+      borderWidth: 1,
+      backdropFilter: 'blur(16px)',
+    } satisfies WebGlassStyle;
+
     return (
-      <View
-        style={[
-          styles.base,
-          {
-            borderRadius,
-            backgroundColor: theme.glassBackground,
-            borderColor: theme.glassBorder,
-            borderWidth: 1,
-            backdropFilter: 'blur(16px)',
-          },
-          style,
-        ]}>
+      <View style={[styles.base, webGlassStyle, style]}>
         {children}
       </View>
     );
