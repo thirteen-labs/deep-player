@@ -1,5 +1,5 @@
 import BottomSheet from '@gorhom/bottom-sheet';
-import { MusicDoubleNote } from 'iconoir-react-native';
+import { MediaVideo, MusicDoubleNote } from 'iconoir-react-native';
 import { useEffect, useRef, type ComponentRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -44,8 +44,8 @@ export function TrackSheetHost({ owner = 'root' }: { owner?: TrackSheetHostOwner
     <View pointerEvents="box-none" style={styles.overlay}>
       <AppBottomSheet
         ref={sheetRef}
-        title="Track options"
-        icon={MusicDoubleNote}
+        title={current?.mediaType === 'video' ? 'Video options' : 'Track options'}
+        icon={current?.mediaType === 'video' ? MediaVideo : MusicDoubleNote}
         snapPoints={['65%', '92%']}
         scrollable
         scrollToTopKey={`${current?.id ?? 'none'}:${view}`}

@@ -6,6 +6,7 @@ import {
   MusicDoubleNote,
   Playlist,
   Search,
+  Sparks,
   User,
 } from 'iconoir-react-native';
 import { type PropsWithChildren, useEffect, useMemo, useState } from 'react';
@@ -24,9 +25,12 @@ import {
   type AppIcon,
 } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
+import { getSystemSmartLists } from '@/features/media-lists/services';
+import { useMediaListStore } from '@/features/media-lists/store';
 import { useTheme } from '@/hooks/use-theme';
 import { useDbStore, type Track } from '@/lib/db/store';
 import { usePlayerStore } from '@/stores/player-store';
+import { openTrackSheet } from '@/stores/track-sheet-store';
 import { formatTime } from '@/utils/format';
 import { hasSearchResults, SEARCH_RESULT_LIMIT, searchLibrary } from '@/utils/search';
 
@@ -42,6 +46,7 @@ export default function SearchScreen() {
   const playlists = useDbStore((s) => s.playlists);
   const folders = useDbStore((s) => s.folders);
   const positions = useDbStore((s) => s.playbackPositions);
+  const customSmartLists = useMediaListStore((s) => s.customSmartLists);
   const isLoaded = useDbStore((s) => s.isLoaded);
   const load = useDbStore((s) => s.load);
   const play = usePlayerStore((s) => s.play);
@@ -52,8 +57,16 @@ export default function SearchScreen() {
   }, [isLoaded, load]);
 
   const results = useMemo(
-    () => searchLibrary(query, { tracks, artists, albums, playlists, folders }),
-    [query, tracks, artists, albums, playlists, folders],
+    () =>
+      searchLibrary(query, {
+        tracks,
+        artists,
+        albums,
+        playlists,
+        folders,
+        smartLists: [...getSystemSmartLists(), ...customSmartLists],
+      }),
+    [albums, artists, customSmartLists, folders, playlists, query, tracks],
   );
   const hasQuery = query.trim().length > 0;
   const found = hasSearchResults(results);
@@ -69,7 +82,7 @@ export default function SearchScreen() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Search songs, videos, artists…"
+          placeholder="Search songs, videos, lists, artists…"
           placeholderTextColor={theme.textSecondary}
           style={[styles.input, { color: theme.text }]}
           accessibilityLabel="Search your library"
@@ -84,14 +97,14 @@ export default function SearchScreen() {
       ) : !hasQuery ? (
         <SectionCard title="Search everything" icon={Search} iconSize={20}>
           <ThemedText type="bodySmall" themeColor="textSecondary">
-            Find songs, videos, artists, albums, playlists and folders in one place.
+            Find songs, videos, smart lists, artists, albums, playlists and folders in one place.
           </ThemedText>
         </SectionCard>
       ) : !found ? (
         <EmptyState
           icon={Search}
           message="No results found"
-          description="Try a different title, artist, album or folder name."
+          description="Try a different title, artist, album, list or folder name."
         />
       ) : (
         <>
@@ -103,6 +116,7 @@ export default function SearchScreen() {
                   track={track}
                   active={activeTrackId === track.id}
                   onPress={() => play(track)}
+                  onLongPress={() => openTrackSheet(track)}
                 />
               ))}
             </ResultSection>
@@ -119,6 +133,7 @@ export default function SearchScreen() {
                   value="Play"
                   valueColor="textSecondary"
                   onPress={() => router.push(`/videos/${encodeURIComponent(track.id)}`)}
+                  onLongPress={() => openTrackSheet(track)}
                 />
               ))}
             </ResultSection>
@@ -177,6 +192,20 @@ export default function SearchScreen() {
                   subtitle={folder.mediaType === 'video' ? 'Videos' : 'Music'}
                   icon={Folder}
                   onPress={() => router.push(`/folders/${encodeURIComponent(folder.id)}`)}
+                />
+              ))}
+            </ResultSection>
+          ) : null}
+
+          {results.smartLists.length > 0 ? (
+            <ResultSection title="Smart Lists" icon={Sparks} count={results.smartLists.length}>
+              {results.smartLists.map((list) => (
+                <InfoRow
+                  key={list.id}
+                  label={list.name}
+                  subtitle={list.description || 'Saved search'}
+                  icon={Sparks}
+                  onPress={() => router.push(`/smart-lists/${encodeURIComponent(list.id)}`)}
                 />
               ))}
             </ResultSection>

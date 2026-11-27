@@ -21,6 +21,8 @@ type TrackRowProps = {
   onLongPress?: () => void;
   /** Opens the shared track options sheet. */
   onMorePress?: () => void;
+  /** Inline status such as a missing file or absent artwork. */
+  notice?: string;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -34,6 +36,7 @@ export function TrackRow({
   onPress,
   onLongPress,
   onMorePress,
+  notice,
   style,
 }: TrackRowProps) {
   const theme = useTheme();
@@ -82,6 +85,11 @@ export function TrackRow({
           <ThemedText type="bodySmall" themeColor="textSecondary" numberOfLines={1}>
             {subtitle}
           </ThemedText>
+          {notice ? (
+            <ThemedText type="caption" themeColor="textSecondary" numberOfLines={1}>
+              {notice}
+            </ThemedText>
+          ) : null}
         </View>
       </PressableScale>
       {!selectionMode && onMorePress ? (

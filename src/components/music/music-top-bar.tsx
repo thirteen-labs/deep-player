@@ -8,14 +8,16 @@ import { MusicTabs, type MusicSection } from './music-tabs';
 type MusicTopBarProps = {
   value: MusicSection;
   onValueChange: (section: MusicSection) => void;
+  /** Per-list key so each Music section remembers its own sort. */
+  listKey?: string;
 };
 
 /** Music tab header: section tabs with a dedicated sort bar underneath. */
-export function MusicTopBar({ value, onValueChange }: MusicTopBarProps) {
+export function MusicTopBar({ value, onValueChange, listKey }: MusicTopBarProps) {
   return (
     <View style={styles.container}>
       <MusicTabs value={value} onValueChange={onValueChange} />
-      <MusicSortBar />
+      <MusicSortBar listKey={listKey} />
     </View>
   );
 }

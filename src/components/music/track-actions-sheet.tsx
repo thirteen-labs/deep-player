@@ -1,4 +1,5 @@
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
+import { router } from 'expo-router';
 import {
   Album,
   AlbumList,
@@ -14,6 +15,7 @@ import {
   HardDrive,
   Heart,
   InfoCircle,
+  MediaVideo,
   Minus,
   MusicDoubleNote,
   NavArrowLeft,
@@ -138,10 +140,18 @@ function SheetHeader({ title, onBack }: { title: string; onBack: () => void }) {
 }
 
 function TrackHeader({ track }: { track: Track }) {
-  const subtitle = [track.artist || 'Unknown artist', track.album].filter(Boolean).join(' • ');
+  const isVideo = track.mediaType === 'video';
+  const subtitle = isVideo
+    ? track.title || track.uri
+    : [track.artist || 'Unknown artist', track.album].filter(Boolean).join(' • ');
   return (
     <View style={styles.trackHeader}>
-      <MediaArtwork uri={track.artworkUri} size={52} radius={Radius.md} fallbackIcon={MusicDoubleNote} />
+      <MediaArtwork
+        uri={track.artworkUri}
+        size={52}
+        radius={Radius.md}
+        fallbackIcon={isVideo ? MediaVideo : MusicDoubleNote}
+      />
       <View style={styles.trackHeaderCopy}>
         <ThemedText type="label" numberOfLines={1}>
           {track.title || track.uri}
@@ -358,6 +368,7 @@ function PlaylistPanel({
 /** The interactive body of the shared track options bottom sheet. */
 export function TrackActionsSheet({ track }: { track: Track }) {
   const theme = useTheme();
+  const isVideo = track.mediaType === 'video';
   const view = useTrackSheetStore((s) => s.view);
   const setView = useTrackSheetStore((s) => s.setView);
   const close = useTrackSheetStore((s) => s.close);
@@ -410,7 +421,8 @@ export function TrackActionsSheet({ track }: { track: Track }) {
   const backToMenu = () => setView('menu');
 
   const confirmDelete = () => {
-    Alert.alert('Delete track?', `Delete "${track.title || track.uri}" from your library?`, [
+    const noun = isVideo ? 'video' : 'track';
+    Alert.alert(`Delete ${noun}?`, `Delete "${track.title || track.uri}" from your library?`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -610,12 +622,22 @@ export function TrackActionsSheet({ track }: { track: Track }) {
     const format = track.mimeType ?? track.uri.split('.').pop()?.toUpperCase() ?? 'Unknown';
     return (
       <>
-        <SheetHeader title="Media info" onBack={backToMenu} />
-        <InfoRow label="Title" icon={MusicDoubleNote} value={track.title || '—'} />
-        <InfoRow label="Artist" icon={User} value={track.artist || '—'} />
-        <InfoRow label="Album" icon={Album} value={track.album || '—'} />
-        <InfoRow label="Album artist" icon={User} value={track.albumArtist || '—'} />
-        <InfoRow label="Genre" icon={AlbumList} value={track.genre || '—'} />
+        <SheetHeader title={isVideo ? 'Video info' : 'Media info'} onBack={backToMenu} />
+        <InfoRow
+          label="Title"
+          icon={isVideo ? MediaVideo : MusicDoubleNote}
+          value={track.title || '—'}
+        />
+        {!isVideo ? (
+          <>
+            <InfoRow label="Artist" icon={User} value={track.artist || '—'} />
+            <InfoRow label="Album" icon={Album} value={track.album || '—'} />
+            <InfoRow label="Album artist" icon={User} value={track.albumArtist || '—'} />
+            <InfoRow label="Genre" icon={AlbumList} value={track.genre || '—'} />
+          </>
+        ) : (
+          <InfoRow label="Media type" icon={MediaVideo} value="Video" />
+        )}
         <InfoRow label="Duration" icon={Clock} value={formatTime(track.durationMs / 1000)} />
         <InfoRow label="Size" icon={HardDrive} value={formatBytes(track.size)} />
         <InfoRow label="Format" icon={Page} value={format} />
@@ -631,6 +653,42 @@ export function TrackActionsSheet({ track }: { track: Track }) {
         />
         <InfoRow label="Favorite" icon={Heart} value={track.favorite ? 'Yes' : 'No'} />
         <InfoRow label="Location" icon={Folder} value={track.localUri ?? track.uri} />
+      </>
+    );
+  }
+
+  if (isVideo) {
+    return (
+      <>
+        <TrackHeader track={track} />
+        <SheetAction
+          icon={MediaVideo}
+          label="Play video"
+          onPress={() => {
+            close();
+            router.push(`/videos/${encodeURIComponent(track.id)}`);
+          }}
+        />
+        <SheetAction
+          icon={Heart}
+          label={track.favorite ? 'Remove from favorites' : 'Add to favorites'}
+          active={track.favorite}
+          value={track.favorite ? 'On' : undefined}
+          onPress={() => void toggleFavorite(track.id)}
+        />
+        <SheetAction
+          icon={track.hidden ? Eye : EyeClosed}
+          label={track.hidden ? 'Unhide video' : 'Hide / blacklist'}
+          description={
+            track.hidden
+              ? 'Show this video in library lists again'
+              : 'Remove this video from library lists'
+          }
+          onPress={toggleHidden}
+        />
+        <SheetAction icon={InfoCircle} label="Video info" chevron onPress={() => setView('info')} />
+        <SheetAction icon={ShareIcon} label="Share" onPress={onShare} />
+        <SheetAction icon={Trash} label="Delete video" destructive onPress={confirmDelete} />
       </>
     );
   }

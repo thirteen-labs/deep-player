@@ -12,6 +12,7 @@ type Props = {
   onPress?: () => void;
   onLongPress?: () => void;
   onMorePress?: () => void;
+  notice?: string;
 };
 
 /**
@@ -27,6 +28,7 @@ export function TrackRow({
   onPress,
   onLongPress,
   onMorePress,
+  notice,
 }: Props) {
   const play = usePlayerStore((s) => s.play);
 
@@ -40,6 +42,7 @@ export function TrackRow({
       onPress={onPress ?? (() => play(track))}
       onLongPress={onLongPress}
       onMorePress={onMorePress ?? (() => openTrackSheet(track))}
+      notice={notice}
     />
   );
 }

@@ -16,6 +16,7 @@ type InfoRowProps = {
   icon?: AppIcon;
   iconSize?: number;
   onPress?: () => void;
+  onLongPress?: () => void;
   valueColor?: 'text' | 'textSecondary' | 'tint' | 'accent';
   style?: StyleProp<ViewStyle>;
 };
@@ -28,6 +29,7 @@ export function InfoRow({
   icon,
   iconSize = IconSize.md,
   onPress,
+  onLongPress,
   valueColor = 'text',
   style,
 }: InfoRowProps) {
@@ -63,7 +65,12 @@ export function InfoRow({
   const rowStyle = [styles.row, style];
 
   return onPress ? (
-    <PressableScale accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={rowStyle}>
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      style={rowStyle}>
       {content}
     </PressableScale>
   ) : (

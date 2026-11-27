@@ -6,11 +6,20 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { MUSIC_SORT_OPTIONS, useSortStore } from '@/stores/sort-store';
 
-/** Second bar on the Music tab: compact, independent sort choices. */
-export function MusicSortBar() {
+import { sortConfigToTrackSortKey, trackSortKeyToConfig } from '@/features/media-lists/adapters';
+import { useMediaSort } from '@/features/media-lists/hooks';
+
+type MusicSortBarProps = {
+  /** Per-list key used to remember the sort choice. */
+  listKey?: string;
+};
+
+/** Music's compact sort bar, backed by the per-list persisted sort store. */
+export function MusicSortBar({ listKey = 'music:songs' }: MusicSortBarProps) {
   const theme = useTheme();
-  const value = useSortStore((s) => s.musicSort);
-  const setValue = useSortStore((s) => s.setMusicSort);
+  const { sort, setSortConfig } = useMediaSort(listKey, 'music');
+  const setLegacySort = useSortStore((s) => s.setMusicSort);
+  const value = sortConfigToTrackSortKey(sort);
 
   return (
     <View
@@ -30,7 +39,11 @@ export function MusicSortBar() {
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
               accessibilityLabel={`Sort by ${option.label}`}
-              onPress={() => setValue(option.value)}
+              onPress={() => {
+                // Keep the legacy sort store in sync for any remaining consumers.
+                setLegacySort(option.value);
+                setSortConfig(trackSortKeyToConfig(option.value));
+              }}
               style={[styles.option, active && { backgroundColor: theme.backgroundSelected }]}>
               <ThemedText
                 type="label"

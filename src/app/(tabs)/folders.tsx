@@ -3,6 +3,7 @@ import { useEffect, useMemo } from 'react';
 
 import { FolderSection } from '@/components/folders/folder-section';
 import { Screen, TopBar } from '@/components/ui';
+import { SmartListsSection } from '@/features/media-lists/components';
 import { useSettingsStore } from '@/features/settings/store/settings.store';
 import { useDbStore } from '@/lib/db/store';
 import { useSortStore } from '@/stores/sort-store';
@@ -52,6 +53,8 @@ export default function FoldersScreen() {
       header={
         <TopBar title="Folders" showLogo={false} showSmartSort showSearch showNotifications={false} />
       }>
+      <SmartListsSection />
+
       <FolderSection
         title="Smart folders"
         subtitle="Videos grouped by series name"

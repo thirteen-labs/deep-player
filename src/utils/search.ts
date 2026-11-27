@@ -1,3 +1,5 @@
+import { matchesSearch } from '@/features/media-lists/services/media-query.service';
+import type { SmartList } from '@/features/media-lists/types';
 import type { AlbumRow, Folder, Playlist, Track } from '@/lib/db/schema';
 
 /** Keeps search results quick to render on large libraries. */
@@ -9,6 +11,7 @@ export type LibrarySearchInput = {
   albums: AlbumRow[];
   playlists: Playlist[];
   folders: Folder[];
+  smartLists?: SmartList[];
 };
 
 export type LibrarySearchResults = {
@@ -18,6 +21,7 @@ export type LibrarySearchResults = {
   albums: AlbumRow[];
   playlists: Playlist[];
   folders: Folder[];
+  smartLists: SmartList[];
 };
 
 const EMPTY_RESULTS: LibrarySearchResults = {
@@ -27,6 +31,7 @@ const EMPTY_RESULTS: LibrarySearchResults = {
   albums: [],
   playlists: [],
   folders: [],
+  smartLists: [],
 };
 
 /** Case-insensitive substring match across any of the supplied fields. */
@@ -44,18 +49,10 @@ export function searchLibrary(query: string, library: LibrarySearchInput): Libra
 
   return {
     songs: library.tracks
-      .filter(
-        (track) =>
-          track.mediaType === 'music' &&
-          matches(normalized, [track.title, track.artist, track.album, track.albumArtist, track.genre]),
-      )
+      .filter((track) => track.mediaType === 'music' && matchesSearch(track, normalized))
       .slice(0, SEARCH_RESULT_LIMIT),
     videos: library.tracks
-      .filter(
-        (track) =>
-          track.mediaType === 'video' &&
-          matches(normalized, [track.title, track.artist, track.album, track.uri]),
-      )
+      .filter((track) => track.mediaType === 'video' && matchesSearch(track, normalized))
       .slice(0, SEARCH_RESULT_LIMIT),
     artists: library.artists
       .filter((artist) => matches(normalized, [artist]))
@@ -68,6 +65,9 @@ export function searchLibrary(query: string, library: LibrarySearchInput): Libra
       .slice(0, SEARCH_RESULT_LIMIT),
     folders: library.folders
       .filter((folder) => matches(normalized, [folder.name]))
+      .slice(0, SEARCH_RESULT_LIMIT),
+    smartLists: (library.smartLists ?? [])
+      .filter((list) => matches(normalized, [list.name, list.description]))
       .slice(0, SEARCH_RESULT_LIMIT),
   };
 }

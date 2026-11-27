@@ -102,7 +102,8 @@ export default function VideoPlayerScreen() {
       audioPrefs.defaultSpeed !== 1 ? audioPrefs.defaultSpeed : playbackPrefs.defaultSpeed,
     );
   });
-  const videoUri = track?.uri ?? null;
+  // Prefer the offline copy when one exists; fall back to the scanned URI.
+  const videoUri = track?.localUri ?? track?.uri ?? null;
 
   const lockScreenActive =
     playbackSettings.notificationControls && notificationSettings.lockScreenControls;

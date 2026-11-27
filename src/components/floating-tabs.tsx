@@ -1,16 +1,9 @@
-import {
-  Tabs,
-  TabList,
-  TabTrigger,
-  TabSlot,
-  type TabListProps,
-  type TabTriggerSlotProps,
-} from 'expo-router/ui';
 import { FolderIcon } from '@solar-icons/react-native/linear/folder';
 import { MusicNoteIcon } from '@solar-icons/react-native/linear/music-note';
 import { UserIcon } from '@solar-icons/react-native/linear/user';
 import { VideoLibraryIcon } from '@solar-icons/react-native/linear/video-library';
-import { type Ref } from 'react';
+import { Tabs } from 'expo-router';
+import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -21,67 +14,42 @@ import { useTheme } from '@/hooks/use-theme';
 import { withAlpha } from '@/utils/color';
 
 const TABS = [
-  { name: 'folders', href: '/folders', label: 'Folders', icon: FolderIcon },
-  { name: 'music', href: '/music', label: 'Music', icon: MusicNoteIcon },
-  { name: 'videos', href: '/videos', label: 'Videos', icon: VideoLibraryIcon },
-  { name: 'user', href: '/user', label: 'Settings', icon: UserIcon },
-] as const;
+  { name: 'folders', label: 'Folders', icon: FolderIcon },
+  { name: 'music', label: 'Music', icon: MusicNoteIcon },
+  { name: 'videos', label: 'Videos', icon: VideoLibraryIcon },
+  { name: 'user', label: 'Settings', icon: UserIcon },
+] as const satisfies readonly {
+  name: string;
+  label: string;
+  icon: AppIcon;
+}[];
 
-/** Custom tab navigator with a floating, frosted, fully rounded tab bar. */
+/**
+ * Tab navigator with a floating, frosted tab pill on every platform.
+ *
+ * Uses Expo Router's JavaScript tabs (React Navigation bottom tabs) as the
+ * navigator so the bar is always mounted, then replaces the default bar with
+ * the custom pill. The headless `expo-router/ui` tabs are experimental and can
+ * fail to render the TabList, which left the app without a bottom bar.
+ */
 export default function FloatingTabs() {
   return (
-    <Tabs style={styles.root}>
-      {/* Keep visited screens attached: detaching them on every tab change
-          reattaches large list views and makes switching feel slow. */}
-      <TabSlot style={styles.slot} detachInactiveScreens={false} />
-      <TabList asChild>
-        <FloatingTabList>
-          {TABS.map((tab) => (
-            <TabTrigger key={tab.name} name={tab.name} href={tab.href} asChild>
-              <TabButton label={tab.label} icon={tab.icon} />
-            </TabTrigger>
-          ))}
-        </FloatingTabList>
-      </TabList>
+    <Tabs
+      tabBar={FloatingTabBar}
+      screenOptions={{ headerShown: false, tabBarHideOnKeyboard: true }}>
+      {TABS.map((tab) => (
+        <Tabs.Screen key={tab.name} name={tab.name} options={{ title: tab.label }} />
+      ))}
     </Tabs>
   );
 }
 
-type TabButtonProps = TabTriggerSlotProps & { label: string; icon: AppIcon };
-
-function TabButton({ label, icon: Icon, isFocused, ref, ...props }: TabButtonProps) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      {...props}
-      ref={ref as Ref<React.ComponentRef<typeof Pressable>>}
-      accessibilityRole="tab"
-      accessibilityLabel={label}
-      accessibilityState={{ selected: Boolean(isFocused) }}
-      style={({ pressed }) => [
-        styles.tabButton,
-        isFocused && { backgroundColor: theme.backgroundSelected },
-        pressed && styles.pressed,
-      ]}>
-      <ThemedIcon
-        icon={Icon}
-        size={22}
-        color={isFocused ? 'tint' : 'textSecondary'}
-        strokeWidth={isFocused ? 2.4 : 1.9}
-        fill={isFocused ? theme.tint : 'none'}
-      />
-    </Pressable>
-  );
-}
-
-function FloatingTabList(props: TabListProps) {
+function FloatingTabBar({ state, navigateToTab }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
 
   return (
     <View
-      {...props}
       pointerEvents="box-none"
       style={[styles.tabListContainer, { paddingBottom: insets.bottom + Spacing.two }]}>
       <GlassView
@@ -92,19 +60,58 @@ function FloatingTabList(props: TabListProps) {
             boxShadow: `0 8px 24px ${withAlpha(theme.text, 0.18)}`,
           },
         ]}>
-        {props.children}
+        {state.routes.map((route, index) => {
+          const tab = TABS.find((item) => item.name === route.name);
+          if (!tab) return null;
+          const focused = state.index === index;
+          return (
+            <TabButton
+              key={route.key}
+              label={tab.label}
+              icon={tab.icon}
+              focused={focused}
+              onPress={() => navigateToTab(route.key)}
+            />
+          );
+        })}
       </GlassView>
     </View>
   );
 }
 
+type TabButtonProps = {
+  label: string;
+  icon: AppIcon;
+  focused: boolean;
+  onPress: () => void;
+};
+
+function TabButton({ label, icon: Icon, focused, onPress }: TabButtonProps) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="tab"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: focused }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.tabButton,
+        focused && { backgroundColor: theme.backgroundSelected },
+        pressed && styles.pressed,
+      ]}>
+      <ThemedIcon
+        icon={Icon}
+        size={22}
+        color={focused ? 'tint' : 'textSecondary'}
+        strokeWidth={focused ? 2.4 : 1.9}
+        fill={focused ? theme.tint : 'none'}
+      />
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  slot: {
-    flex: 1,
-  },
   tabListContainer: {
     position: 'absolute',
     left: 0,

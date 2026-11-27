@@ -8,7 +8,6 @@ import { TrackBrowser } from '@/components/music/track-browser';
 import { NowPlayingCard, Screen } from '@/components/ui';
 import { useLibraryCacheWarming } from '@/hooks/use-library-cache-warming';
 import { useDbStore } from '@/lib/db/store';
-import { useSortStore } from '@/stores/sort-store';
 
 const MUSIC_SECTIONS: MusicSection[] = [
   'songs',
@@ -46,20 +45,19 @@ export default function MusicScreen() {
 
   const tracks = useDbStore((s) => s.tracks);
   const isLoaded = useDbStore((s) => s.isLoaded);
+  const error = useDbStore((s) => s.error);
   const load = useDbStore((s) => s.load);
-  const musicSort = useSortStore((s) => s.musicSort);
 
   useEffect(() => {
     if (!isLoaded) void load();
   }, [isLoaded, load]);
 
   const libraryTracks = useMemo(() => tracks.filter((t) => t.mediaType !== 'video'), [tracks]);
-  const favoriteTracks = useMemo(() => libraryTracks.filter((t) => t.favorite), [libraryTracks]);
 
   useLibraryCacheWarming(tracks);
 
   return (
-    <Screen fullWidth header={<MusicTopBar value={section} onValueChange={setSection} />}>
+    <Screen fullWidth header={<MusicTopBar value={section} onValueChange={setSection} listKey={`music:${section}`} />}>
       <NowPlayingCard />
 
       {section === 'songs' ? (
@@ -67,16 +65,22 @@ export default function MusicScreen() {
           title="Songs"
           tracks={libraryTracks}
           isLoading={!isLoaded}
-          sortKey={musicSort}
+          error={error}
+          permissionDenied={/permission|denied/i.test(error ?? '')}
+          onRetry={() => void load()}
+          listKey="music:songs"
         />
       ) : null}
       {section === 'favorites' ? (
         <TrackBrowser
           title="Favorites"
-          tracks={favoriteTracks}
+          tracks={libraryTracks}
           isLoading={!isLoaded}
-          showSearch={false}
-          sortKey={musicSort}
+          error={error}
+          permissionDenied={/permission|denied/i.test(error ?? '')}
+          onRetry={() => void load()}
+          listKey="music:favorites"
+          lockedFilter={{ favoritesOnly: true }}
         />
       ) : null}
       {section === 'playlists' ? <PlaylistList /> : null}

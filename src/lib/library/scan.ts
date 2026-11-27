@@ -8,6 +8,7 @@ import {
   Query,
 } from 'expo-media-library';
 
+import { clearMediaFileCache } from '@/features/media-lists/services/media-file.service';
 import { useSettingsStore } from '@/features/settings/store/settings.store';
 import { enqueueDbTask } from '@/lib/db/queue';
 import type { FolderMediaType, Track } from '@/lib/db/schema';
@@ -200,6 +201,8 @@ async function runScan(kind: ScanKind): Promise<Track[]> {
   const tracks: Track[] = [];
   if (kind !== 'video') tracks.push(...(await scanLibrary()));
   if (kind !== 'music') tracks.push(...(await scanVideos()));
+  // Files may have appeared or disappeared; invalidate cached existence checks.
+  clearMediaFileCache();
   return tracks;
 }
 
