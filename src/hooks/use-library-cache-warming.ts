@@ -24,26 +24,31 @@ export function useLibraryCacheWarming(tracks: Track[]) {
       3,
       async (track) => {
         if (!active) return;
-        const store = useDbStore.getState();
+        try {
+          const store = useDbStore.getState();
 
-        if (!track.localUri) {
-          const localUri = await cacheTrack(track);
-          if (!active) return;
-          if (localUri && localUri !== track.localUri) {
-            await store.setTrackLocalUri(track.id, localUri);
+          if (!track.localUri) {
+            const localUri = await cacheTrack(track);
+            if (!active) return;
+            if (localUri && localUri !== track.localUri) {
+              await store.setTrackLocalUri(track.id, localUri);
+            }
           }
-        }
 
-        if (track.artworkUri && /^https?:\/\//.test(track.artworkUri)) {
-          const artworkUri = await cacheArtwork(track);
-          if (!active) return;
-          if (artworkUri && artworkUri !== track.artworkUri) {
-            await useDbStore.getState().setTrackArtworkUri(track.id, artworkUri);
+          if (track.artworkUri && /^https?:\/\//.test(track.artworkUri)) {
+            const artworkUri = await cacheArtwork(track);
+            if (!active) return;
+            if (artworkUri && artworkUri !== track.artworkUri) {
+              await useDbStore.getState().setTrackArtworkUri(track.id, artworkUri);
+            }
           }
+        } catch {
+          // Cache warming is best-effort. A failed download or DB write must
+          // never reject the startup queue and take down the app.
         }
       },
       () => active,
-    );
+    ).catch(() => undefined);
 
     return () => {
       active = false;

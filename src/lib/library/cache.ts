@@ -27,7 +27,9 @@ export async function cacheTrack(track: Track): Promise<string | null> {
     return track.localUri ?? null;
   }
   try {
-    const dir = new Directory(Paths.document, CACHE_DIRS[track.mediaType]);
+    const cacheDir = CACHE_DIRS[track.mediaType];
+    if (!cacheDir) return null;
+    const dir = new Directory(Paths.document, cacheDir);
     if (!dir.exists) {
       dir.create();
     }

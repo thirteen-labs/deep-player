@@ -29,6 +29,9 @@ export function ThemedIcon({
   style,
 }: ThemedIconProps) {
   const theme = useTheme();
+  // A missing export can resolve to undefined at runtime; render nothing
+  // instead of throwing while mounting the initial screen.
+  if (!Icon) return null;
   const isPaletteKey =
     color != null && THEME_COLOR_KEYS.some((key) => key === color);
   const resolved =
