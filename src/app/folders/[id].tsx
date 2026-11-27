@@ -5,9 +5,11 @@ import { TrackCollection } from '@/components/library/track-collection';
 import { EmptyState, LoadingState, Screen, SectionCard, TopBar } from '@/components/ui';
 import { VideoList } from '@/components/videos/video-list';
 import { Spacing } from '@/constants/theme';
-import { useSortedTracks } from '@/hooks/use-sorted-tracks';
+import { sortConfigToTrackSortKey } from '@/features/media-lists/adapters';
+import { useLegacySortBridge, useMediaSort } from '@/features/media-lists/hooks';
 import { useDbStore } from '@/lib/db/store';
 import { resolveFolderTracks } from '@/utils/folder-tracks';
+import { sortTracks } from '@/utils/track-sorting';
 
 /** Folder detail: music folders use the shared track collection, video folders use the video list. */
 export default function FolderDetailScreen() {
@@ -29,7 +31,14 @@ export default function FolderDetailScreen() {
     () => (folder ? resolveFolderTracks(folder, tracks, folderTracks) : []),
     [folder, tracks, folderTracks],
   );
-  const sortedContents = useSortedTracks(contents);
+  const sortSection = folder?.mediaType === 'video' ? 'video' : 'music';
+  const listKey = `${sortSection}:folder:${folderId}`;
+  useLegacySortBridge(listKey, sortSection);
+  const { sort } = useMediaSort(listKey, sortSection);
+  const sortedContents = useMemo(
+    () => sortTracks(contents, sortConfigToTrackSortKey(sort)),
+    [contents, sort],
+  );
 
   if (!isLoaded) {
     return (
@@ -49,7 +58,7 @@ export default function FolderDetailScreen() {
 
   if (folder.mediaType === 'video') {
     return (
-      <Screen fullWidth header={<TopBar title={folder.name} showNotifications={false} />}>
+      <Screen fullWidth header={<TopBar title={folder.name} showUniversalSort showNotifications={false} />}>
         <SectionCard
           title={folder.name}
           subtitle={`${sortedContents.length} videos`}
@@ -69,7 +78,9 @@ export default function FolderDetailScreen() {
   return (
     <TrackCollection
       title={folder.name}
-      tracks={sortedContents}
+      tracks={contents}
+      listKey={listKey}
+      sortSection="music"
       emptyMessage="This folder is empty."
       emptyDescription="Rescan your library to refresh its contents."
     />

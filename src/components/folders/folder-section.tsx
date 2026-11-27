@@ -1,6 +1,13 @@
 import { useMemo } from 'react';
 
-import { CollectionList, EmptyState, folderIcon, LoadingState, SectionCard } from '@/components/ui';
+import {
+  CollectionList,
+  EmptyState,
+  folderIcon,
+  LoadingState,
+  SectionCard,
+  SmartIndicator,
+} from '@/components/ui';
 import type { CollectionItem } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import type { Folder } from '@/lib/db/schema';
@@ -35,7 +42,7 @@ export function FolderSection({
         key: folder.id,
         label: folder.name,
         subtitle: `${counts.get(folder.id) ?? 0} ${unit}`,
-        value: folder.smartlistType ? 'Smart' : undefined,
+        value: folder.smartlistType ? <SmartIndicator /> : undefined,
         icon: folderIcon(folder),
         onPress: () => onOpen(folder.id),
       })),

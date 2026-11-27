@@ -6,7 +6,6 @@ import { TrackCollection } from '@/components/library/track-collection';
 import { ThemedText } from '@/components/themed-text';
 import { AppButton, NamePromptModal, SectionCard } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
-import { useSortedTracks } from '@/hooks/use-sorted-tracks';
 import { useDbStore, type Track } from '@/lib/db/store';
 
 export default function PlaylistScreen() {
@@ -33,7 +32,6 @@ export default function PlaylistScreen() {
       .map((link) => byId.get(link.trackId))
       .filter((track): track is Track => track !== undefined);
   }, [playlistLinks, allTracks, playlistId]);
-  const sortedTracks = useSortedTracks(tracks);
 
   const title = playlist?.name ?? 'Playlist';
 
@@ -53,7 +51,8 @@ export default function PlaylistScreen() {
   return (
     <TrackCollection
       title={title}
-      tracks={sortedTracks}
+      tracks={tracks}
+      listKey={`music:playlist:${playlistId}`}
       isLoading={!isLoaded}
       emptyMessage="This playlist is empty."
       emptyDescription="Add tracks from the Music tab.">

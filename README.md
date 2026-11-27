@@ -9,15 +9,26 @@ Deep Player is a local-first music and video player for iOS, Android, and web. I
 - **Continue watching** — bottom-right button resumes the most recent unfinished video
 - **Music playback** — shared `expo-audio` engine, compact now-playing bar and full-screen player with lock-screen controls, background playback, queue, repeat, shuffle, speed, and volume
 - **Universal search** — top-bar search opens one page that finds songs, videos, artists, albums, playlists and folders
-- **Browsing** — search, artists, albums, track lists, folders, and video smartlists (FlashList-backed)
+- **Browsing** — search, artists, albums, track lists, folders, and video smartlists (FlashList-backed), with filters for media type, folder, date added, favorites, duration, size, and format/resolution
+- **Per-list sorting** — artist, album, playlist, and folder detail screens expose the universal sort control and keep their own persisted sort order
 - **Playlists** — create, rename, delete, and reorder collections; add tracks from any list
 - **Favorites and history** — favorite tracks and recently played items
 - **Queue** — play next, add to queue, and remove from queue
 - **Videos** — video library and immersive `expo-video` player with auto-hiding controls, ±10s seek, speed, fullscreen, Picture-in-Picture and background playback
-- **Offline playback** — downloads tracks and artwork to the app document directory and persists local URIs
+- **Offline playback** — downloads tracks and artwork to the app document directory, warms the cache app-wide for music and video in the background, and persists local URIs
 - **Theming and permissions** — Iconoir icons, palette-adaptive screens and overlays, theme picker, flex/grid list layout setting, media-library and notification permission controls, file picker
 - **App icons** — runtime picker with 8 optional icons on iOS and Android
 - **CI** — lint, typecheck, and release APK build via GitHub Actions
+
+## Recent changes
+
+### 2026-11-27
+
+- Set the app display name to **Deep Player** (`expo.name` in `app.json`); the slug, package name, EAS project, and database filename are unchanged.
+- Extended the media filter sheet with media-type and folder chips and a validated `YYYY-MM-DD` date-added range. Music and video lists only offer types they can display, and virtual folders are excluded from folder filters.
+- Added per-list, persisted sorting to artist, album, playlist, and folder detail screens (including video folders) through the shared universal sort control.
+- Moved offline cache warming to a root-level component so the whole library is warmed regardless of the active tab; music and video downloads now use separate `cached-audio` and `cached-video` directories.
+- Replaced plain "Smart"/"Smartlist" labels with a consistent arrow indicator on smart folder rows and sections.
 
 ## Tech stack
 
@@ -87,7 +98,7 @@ The app requests media library access to scan audio/video, and optional notifica
 
 ## Data and offline behavior
 
-All metadata lives in a local SQLite database (`deep-player.db`), including folders, tracks, playlists, favorites, playback positions, and recently played items. `Scan library` upserts device assets into the `tracks` table. Offline caching downloads track audio and artwork into `Paths.document` and stores their local URIs, so cached items keep playing without network access.
+All metadata lives in a local SQLite database (`deep-player.db`), including folders, tracks, playlists, favorites, playback positions, and recently played items. `Scan library` upserts device assets into the `tracks` table. Offline caching downloads audio and video into separate `cached-audio` and `cached-video` directories under `Paths.document`, plus artwork alongside them, and stores local URIs. A root-level warmer covers the whole library with bounded concurrency, so cached items keep playing without network access.
 
 ## Project structure
 

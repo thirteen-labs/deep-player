@@ -248,6 +248,7 @@ export function TrackBrowser({
           key={sheetVersion}
           initialFilter={filter}
           mediaType="music"
+          availableMediaTypes={['music']}
           onApply={(next) => {
             setFilter(next);
             filterSheetRef.current?.close();

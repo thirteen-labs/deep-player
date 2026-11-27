@@ -1,8 +1,12 @@
 import { Directory, File, Paths } from 'expo-file-system';
 
-import type { Track } from '@/lib/db/schema';
+import type { FolderMediaType, Track } from '@/lib/db/schema';
 
-const CACHE_DIR = 'cached-audio';
+/** Keep video downloads separate from audio so warming covers both libraries. */
+const CACHE_DIRS: Record<FolderMediaType, string> = {
+  music: 'cached-audio',
+  video: 'cached-video',
+};
 
 function isNetworkUri(uri: string): boolean {
   return uri.startsWith('http://') || uri.startsWith('https://');
@@ -23,7 +27,7 @@ export async function cacheTrack(track: Track): Promise<string | null> {
     return track.localUri ?? null;
   }
   try {
-    const dir = new Directory(Paths.document, CACHE_DIR);
+    const dir = new Directory(Paths.document, CACHE_DIRS[track.mediaType]);
     if (!dir.exists) {
       dir.create();
     }

@@ -248,6 +248,7 @@ export function VideoBrowser({
           key={sheetVersion}
           initialFilter={filter}
           mediaType="video"
+          availableMediaTypes={['video']}
           onApply={(next) => {
             setFilter(next);
             filterSheetRef.current?.close();

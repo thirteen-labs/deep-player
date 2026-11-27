@@ -17,6 +17,7 @@ import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { EqualizerPersistence } from '@/components/equalizer-persistence';
 import { FontSizePersistence } from '@/components/font-size-persistence';
 import { LayoutPersistence } from '@/components/layout-persistence';
+import { LibraryCacheWarmer } from '@/components/library-cache-warmer';
 import { PermissionRequests } from '@/components/permission-requests';
 import { PlayerEngine } from '@/components/player-engine';
 import { SortSheetHost } from '@/components/sort-sheet-host';
@@ -89,6 +90,7 @@ export default function RootLayout() {
       <LayoutPersistence />
       <EqualizerPersistence />
       <SettingsRuntime />
+      <LibraryCacheWarmer />
       <PermissionRequests />
       <PlayerEngine />
       <GestureHandlerRootView style={{ flex: 1 }}>

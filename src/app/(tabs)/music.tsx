@@ -6,7 +6,6 @@ import { MusicTopBar } from '@/components/music/music-top-bar';
 import type { MusicSection } from '@/components/music/music-tabs';
 import { TrackBrowser } from '@/components/music/track-browser';
 import { NowPlayingCard, Screen } from '@/components/ui';
-import { useLibraryCacheWarming } from '@/hooks/use-library-cache-warming';
 import { useDbStore } from '@/lib/db/store';
 
 const MUSIC_SECTIONS: MusicSection[] = [
@@ -53,8 +52,6 @@ export default function MusicScreen() {
   }, [isLoaded, load]);
 
   const libraryTracks = useMemo(() => tracks.filter((t) => t.mediaType !== 'video'), [tracks]);
-
-  useLibraryCacheWarming(tracks);
 
   return (
     <Screen fullWidth header={<MusicTopBar value={section} onValueChange={setSection} listKey={`music:${section}`} />}>

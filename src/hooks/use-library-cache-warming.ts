@@ -5,9 +5,10 @@ import { useDbStore, type Track } from '@/lib/db/store';
 import { mapLimit } from '@/utils/async';
 
 /**
- * Warms the offline cache in the background, once per track id.
- * Bounded concurrency and a cancellation flag prevent repeated download
- * storms when the library store updates (which used to re-trigger the effect).
+ * Warms the offline cache in the background for every media type (music and
+ * video), once per track id. Bounded concurrency and a cancellation flag
+ * prevent repeated download storms when the library store updates (which used
+ * to re-trigger the effect).
  */
 export function useLibraryCacheWarming(tracks: Track[]) {
   const processedRef = useRef<Set<string>>(new Set());

@@ -2,7 +2,6 @@ import { useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 
 import { TrackCollection } from '@/components/library/track-collection';
-import { useSortedTracks } from '@/hooks/use-sorted-tracks';
 import { useDbStore } from '@/lib/db/store';
 
 export default function AlbumDetailScreen() {
@@ -19,12 +18,13 @@ export default function AlbumDetailScreen() {
       ),
     [allTracks, albumName, artistName],
   );
-  const sortedTracks = useSortedTracks(tracks);
+  const listKey = `music:album:${encodeURIComponent(artistName)}:${encodeURIComponent(albumName)}`;
 
   return (
     <TrackCollection
       title={albumName || 'Album'}
-      tracks={sortedTracks}
+      tracks={tracks}
+      listKey={listKey}
       isLoading={!isLoaded}
       emptyMessage="This album is empty."
     />
