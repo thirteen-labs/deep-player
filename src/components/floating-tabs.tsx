@@ -5,7 +5,6 @@ import { VideoLibraryIcon } from '@solar-icons/react-native/linear/video-library
 import { Tabs } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassView } from '@/components/ui/glass-view';
 import { ThemedIcon, type AppIcon } from '@/components/ui/themed-icon';
@@ -44,8 +43,15 @@ export default function FloatingTabs() {
   );
 }
 
-function FloatingTabBar({ state, navigateToTab }: BottomTabBarProps) {
-  const insets = useSafeAreaInsets();
+/**
+ * `tabBar` is invoked as a plain function by the navigator, so it must not
+ * call hooks itself. Render a real component instead.
+ */
+function FloatingTabBar(props: BottomTabBarProps) {
+  return <FloatingTabBarContent {...props} />;
+}
+
+function FloatingTabBarContent({ state, navigateToTab, insets }: BottomTabBarProps) {
   const theme = useTheme();
 
   return (
